@@ -1,0 +1,12 @@
+body, html {
+    height: 100%;
+    background:#f7f7f7;
+}
+
+a.black2blue:link {color:#121212;text-decoration:none;}    /* 未被访问的链接 */
+a.black2blue:visited {color:#121212;text-decoration:none;} /* 已被访问的链接 */
+a.black2blue:hover {color:#0056b3;text-decoration:none;}   /* 鼠标指针移动到链接上 */
+
+a.grey2blue:link {color:#696969;text-decoration:none;}    /* 未被访问的链接 */
+a.grey2blue:visited {color:#696969;text-decoration:none;} /* 已被访问的链接 */
+a.grey2blue:hover {color:#0056b3;text-decoration:none;}   /* 鼠标指针移动到链接上 */

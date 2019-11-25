@@ -1,19 +1,56 @@
 {% extends 'base.html' %}
 {% from 'macros.html' import photo_card with context %}
 
-{% block title %}Explore{% endblock %}
+{% block title %}探索{% endblock %}
 
 {% block content %}
-    <div class="row">
-        <div class="col-md-12">
-            {% for photo in photos %}
-                {{ photo_card(photo) }}
-            {% endfor %}
+    <div class="row justify-content-md-center">
+        <div class="container">
+            <div class="row m-2">
+                <div class="col-md-9">
+                    {% include 'main/_searchbar.html' %}
+                </div>
+                <div class="col-md-3">
+                </div>
+            </div>
+            <div class="row m-2">
+                <div class="col-md-9">
+                    {% if surveys %}
+                        {% for survey in surveys %}
+                            <div class="container m-2" data-id="{{ survey.id }}" data-name="{{ survey.name }}">
+                        <div class="card">
+                            <div class="row">
+                                <div class="col-md-9">
+                                    <div class="container">
+                                        <div class="row">
+                                            <a class="black2blue font-weight-bold nav-item nav-link" href="{{ url_for }}" target="_blank">
+                                                <h5>{{ survey.title }}</h5>
+                                            </a>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="col-md-3" >
+                                    <div class="text-left">
+                                        <a style="font-size: 10px">奖励：<a style="color: #007bff;font-size: 10px">{{ }}</a></a>
+                                    </div>
+                                    <div class="text-left">
+                                        <a style="font-size: 10px">时间：{{  }}</a>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="nav nav-pills flex-column" role="tablist" aria-orientation="vertical">
+                        {{ render_nav_item('user.edit_profile', '全部问卷') }}
+                        {{ render_nav_item('user.notification_setting', '收藏问卷') }}
+                    </div>
+                </div>
+            </div>
         </div>
     </div>
-    <div class="text-center">
-        <a class="btn btn-primary" href="{{ url_for('.explore') }}">
-            <span class="oi oi-loop-circular"></span> Change
-        </a>
-    </div>
+    {% if photos %}
+        {{ render_pagination(pagination, align='center') }}
+    {% endif %}
 {% endblock %}

@@ -7,79 +7,163 @@
 {% block content %}
 {% if current_user.is_authenticated %}
     <div class="row justify-content-md-center">
-        <div class="col-md-8">
-            {% if photos %}
-                {% for photo in photos %}
-                    <div class="card mb-3 w-100 bg-light">
-                        <div class="card-header">
-                            <a class="dead-link" href="{{ url_for('user.index', username=photo.author.username) }}">
-                                <img class="rounded img-fluid avatar-s profile-popover"
-                                     data-href="{{ url_for('ajax.get_profile', user_id=photo.author.id) }}"
-                                     src="{{ url_for('main.get_avatar', filename=photo.author.avatar_m) }}">
-                            </a>
-                            <a class="profile-popover trend-card-avatar"
-                               data-href="{{ url_for('ajax.get_profile', user_id=photo.author.id) }}"
-                               href="{{ url_for('user.index', username=photo.author.username) }}">{{ photo.author.name }}</a>
-                            <span class="float-right">
-                <small data-toggle="tooltip" data-placement="top" data-timestamp="{{ photo.timestamp }}"
-                       data-delay="500">
-                    {{ moment(photo.timestamp).fromNow(refresh=True) }}</small></span>
-                        </div>
-                        <div class="card-body">
-                            <div class="" align="center">
-                                <a class="thumbnail" href="{{ url_for('.show_photo', photo_id=photo.id) }}"
-                                   target="_blank">
-                                    <img class="img-fluid"
-                                         src="{{ url_for('.get_image', filename=photo.filename_m) }}">
-                                </a>
+        <div class="container">
+            <div class="row m-2">
+                <div class="col-md-9">
+                    {% include 'main/_searchbar.html' %}
+                </div>
+                <div class="col-md-3">
+                    <ul class="nav nav-pills nav-justified">
+                        <li class="nav-item">
+                            <a class="nav-link active" href="{{ url_for() }}">新建问卷</a>
+                        </li>
+                    </ul>
+                </div>
+            </div>
+            <div class="row m-2">
+                <div class="col-md-9">
+                    {% if surveys %}
+                        {% for survey in surveys %}
+                            <div class="container m-2" data-id="{{ survey.id }}" data-name="{{ survey.name }}">
+                                <div class="card">
+                                <div class="row">
+                                    <div class="col-md-9">
+                                            <div class="container ">
+                                                <div class="row">
+                                                    <a class="black2blue font-weight-bold nav-item nav-link" href="{{ url_for }}" target="_blank">
+                                                        <h5>{{ survey.title }}</h5>
+                                                    </a>
+                                                </div>
+                                            </div>
+                                            <div class="container">
+                                                <div class="row">
+                                                    <div class="col-md-2 ">
+                                                        <a class="grey2blue" href="{{ url_for() }}" target="_blank">
+                                                            <span class="oi oi-file"></span>设计问卷
+                                                        </a>
+                                                    </div>
+                                                    <div class="col-md-2 ">
+                                                        <a class="grey2blue" href="{{ url_for() }}">
+                                                            <span class="oi oi-external-link"></span>发送问卷
+                                                        </a>
+                                                    </div>
+                                                    <div class="col-md-2 ">
+                                                        <a class="grey2blue" href="{{ url_for() }}">
+                                                            <span class="oi oi-play-circle"></span>
+                                                            {% if survey %}
+                                                            发布
+                                                            {% else %}
+                                                            停止
+                                                            {% endif %}
+                                                        </a>
+                                                    </div>
+                                                    <div class="col-md-2 ">
+                                                        <a class="grey2blue" href="{{ url_for() }}" >
+                                                            <span class="oi oi-cog"></span>设置
+                                                        </a>
+                                                    </div>
+                                                    <div class="col-md-2 ">
+                                                        <a class="grey2blue" href="{{ url_for() }}" target="_blank">
+                                                            <span class="oi oi-bar-chart"></span>分析
+                                                        </a>
+                                                    </div>
+                                                    <div class="col-md-2 " href="{{ url_for() }}">
+                                                        <a class="grey2blue">
+                                                            <span class="oi oi-trash"></span>删除
+                                                        </a>
+                                                    </div>
+                                                </div>
+                                            </div>
+
+                                    </div>
+                                    <div class="col-md-3" >
+                                            <div class="text-left">
+                                                <a style="font-size: 10px">状态：<a style="color: #007bff;font-size: 10px">{{ }}</a></a>
+                                            </div>
+                                            <div class="text-left" >
+                                                <a style="font-size: 10px">答卷：<a style="color: #007bff;font-size: 10px">{{ }}</a></a>
+                                            </div>
+                                            <div class="text-left">
+                                                <a style="font-size: 10px">时间：{{  }}</a>
+                                            </div>
+                                    </div>
+                                </div>
+                                </div>
                             </div>
-                        </div>
-                        <div class="card-footer">
-                            <span class="oi oi-star"></span>
-                            <span id="collectors-count-{{ photo.id }}"
-                                  data-href="{{ url_for('ajax.collectors_count', photo_id=photo.id) }}">
-                                {{ photo.collectors|length }}
-                            </span>
-                            <span class="oi oi-comment-square"></span> {{ photo.comments|length }}
-                            <div class="float-right">
-                                {% if current_user.is_authenticated %}
-                                    <button class="{% if not current_user.is_collecting(photo) %}hide{% endif %}
-                                     btn btn-outline-secondary btn-sm uncollect-btn"
-                                            data-href="{{ url_for('ajax.uncollect', photo_id=photo.id) }}"
-                                            data-id="{{ photo.id }}">
-                                        <span class="oi oi-x"></span> Uncollect
-                                    </button>
-                                    <button class="{% if current_user.is_collecting(photo) %}hide{% endif %}
-                                     btn btn-outline-primary btn-sm collect-btn"
-                                            data-href="{{ url_for('ajax.collect', photo_id=photo.id) }}"
-                                            data-id="{{ photo.id }}">
-                                        <span class="oi oi-star"></span> Collect
-                                    </button>
-                                {% else %}
-                                    <form class="inline" method="post"
-                                          action="{{ url_for('main.collect', photo_id=photo.id) }}">
-                                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-                                        <button type="submit" class="btn btn-outline-primary btn-sm">
-                                            <span class="oi oi-star"></span> Collect
-                                        </button>
-                                    </form>
-                                {% endif %}
-                            </div>
-                            {% if photo.description %}
-                                <p class="card-text">{{ photo.description }}</p>
-                            {% endif %}
-                        </div>
-                    </div>
-                {% endfor %}
+
+{#                    <div class="card mb-3 w-100 bg-light">#}
+{#                        <div class="card-header">#}
+{#                            <a class="dead-link" href="{{ url_for('user.index', username=photo.author.username) }}">#}
+{#                                <img class="rounded img-fluid avatar-s profile-popover"#}
+{#                                     data-href="{{ url_for('ajax.get_profile', user_id=photo.author.id) }}"#}
+{#                                     src="{{ url_for('main.get_avatar', filename=photo.author.avatar_m) }}">#}
+{#                            </a>#}
+{#                            <a class="profile-popover trend-card-avatar"#}
+{#                               data-href="{{ url_for('ajax.get_profile', user_id=photo.author.id) }}"#}
+{#                               href="{{ url_for('user.index', username=photo.author.username) }}">{{ photo.author.name }}</a>#}
+{#                            <span class="float-right">#}
+{#                <small data-toggle="tooltip" data-placement="top" data-timestamp="{{ photo.timestamp }}"#}
+{#                       data-delay="500">#}
+{#                    {{ moment(photo.timestamp).fromNow(refresh=True) }}</small></span>#}
+{#                        </div>#}
+{#                        <div class="card-body">#}
+{#                            <div class="" align="center">#}
+{#                                <a class="thumbnail" href="{{ url_for('.show_photo', photo_id=photo.id) }}"#}
+{#                                   target="_blank">#}
+{#                                    <img class="img-fluid"#}
+{#                                         src="{{ url_for('.get_image', filename=photo.filename_m) }}">#}
+{#                                </a>#}
+{#                            </div>#}
+{#                        </div>#}
+{#                        <div class="card-footer">#}
+{#                            <span class="oi oi-star"></span>#}
+{#                            <span id="collectors-count-{{ photo.id }}"#}
+{#                                  data-href="{{ url_for('ajax.collectors_count', photo_id=photo.id) }}">#}
+{#                                {{ photo.collectors|length }}#}
+{#                            </span>#}
+{#                            <span class="oi oi-comment-square"></span> {{ photo.comments|length }}#}
+{#                            <div class="float-right">#}
+{#                                {% if current_user.is_authenticated %}#}
+{#                                    <button class="{% if not current_user.is_collecting(photo) %}hide{% endif %}#}
+{#                                     btn btn-outline-secondary btn-sm uncollect-btn"#}
+{#                                            data-href="{{ url_for('ajax.uncollect', photo_id=photo.id) }}"#}
+{#                                            data-id="{{ photo.id }}">#}
+{#                                        <span class="oi oi-x"></span> Uncollect#}
+{#                                    </button>#}
+{#                                    <button class="{% if current_user.is_collecting(photo) %}hide{% endif %}#}
+{#                                     btn btn-outline-primary btn-sm collect-btn"#}
+{#                                            data-href="{{ url_for('ajax.collect', photo_id=photo.id) }}"#}
+{#                                            data-id="{{ photo.id }}">#}
+{#                                        <span class="oi oi-star"></span> Collect#}
+{#                                    </button>#}
+{#                                {% else %}#}
+{#                                    <form class="inline" method="post"#}
+{#                                          action="{{ url_for('main.collect', photo_id=photo.id) }}">#}
+{#                                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">#}
+{#                                        <button type="submit" class="btn btn-outline-primary btn-sm">#}
+{#                                            <span class="oi oi-star"></span> Collect#}
+{#                                        </button>#}
+{#                                    </form>#}
+{#                                {% endif %}#}
+{#                            </div>#}
+{#                            {% if photo.description %}#}
+{#                                <p class="card-text">{{ photo.description }}</p>#}
+{#                            {% endif %}#}
+{#                        </div>#}
+{#                    </div>#}
+
+				{% endfor %}
             {% else %}
                 <div class="tip text-center">
-                    <h3>No trends.</h3>
-                    <p><a href="{{ url_for('.explore') }}">Explore</a></p>
+                    <h3>暂无问卷.</h3>
+                    <p><a href="{{ url_for('.explore') }}">探索</a></p>
                 </div>
             {% endif %}
         </div>
-        <div class="col-md-3">
-            {% include 'main/_sidebar.html' %}
+                <div class="col-md-3">
+                    {% include 'main/_sidebar.html' %}
+                </div>
+            </div>
         </div>
     </div>
     {% if photos %}
@@ -92,8 +176,8 @@
                 <img src="{{ url_for('static', filename='images/index.jpg') }}" class="rounded img-fluid">
             </div>
             <div class="col-md-4 align-self-center">
-                <h1>Albumy</h1>
-                <p>Capture and remember every wonderful moment.</p>
+                <h1>Vanswer</h1>
+                <p>调查，随时随地.</p>
                 <p><a class="btn btn-primary btn-lg" href="{{ url_for('auth.register') }}">Join Now</a></p>
             </div>
         </div>

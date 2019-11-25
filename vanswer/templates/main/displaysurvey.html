@@ -1,0 +1,23 @@
+{% extends 'base.html' %}
+
+{% block title %}浏览问卷{% endblock %}
+
+{% block styles %}
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/survey.css') }}" type="text/css" />
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/modern.css') }}" type="text/css"/>
+{% endblock %}
+
+{% block navbar %}
+{% endblock %}
+
+{% block content %}
+    <div id="surveyContainer">
+        <div id="displayElement"></div>
+    </div>
+{% endblock %}
+
+{% block scripts %}
+    {{ super() }}
+    <script src="{{ url_for('static', filename='js/survey.jquery.min.js') }}"></script>
+    <script src="{{ url_for('static', filename='js/survey_display.js') }}" type="text/javascript" ></script>
+{% endblock %}

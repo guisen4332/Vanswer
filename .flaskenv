@@ -1,2 +1,2 @@
-FLASK_APP=albumy
+FLASK_APP=vanswer
 FLASK_ENV=development

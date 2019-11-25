@@ -1,0 +1,45 @@
+{% extends 'base.html' %}
+
+{% block title %}问卷分析{% endblock %}
+
+{% block styles %}
+    {{ super() }}
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/all.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/bootstrap-table.min.css') }}">
+{% endblock %}
+
+
+{% block content %}
+    <div class="container">
+        <div class="card m-5">
+        <p class="font-weight-bold text-center" >题目 <a style="color: gray">单选题 </a></p>
+        <table
+  id="table"
+  data-toggle="table"
+  data-show-footer="true"
+  data-url="/json">
+  <thead>
+    <tr>
+      <th  data-sortable="true" data-width="60" data-width-unit="%" data-field="id" data-footer-formatter="personFormatter">选项</th>
+      <th  data-sortable="true" data-width="20" data-width-unit="%" data-field="name" data-footer-formatter="numberFormatter">小计</th>
+      <th  data-sortable="true" data-width="20" data-width-unit="%" data-field="price" >比例</th>
+    </tr>
+  </thead>
+</table>
+    </div>
+    </div>
+{% endblock %}
+
+{% block scripts %}
+    {{ super() }}
+    <script>
+        function personFormatter() {
+            return '本题有效填写人次'
+        }
+        function numberFormatter() {
+            return "0"
+        }
+    </script>
+    <script src="{{ url_for('static', filename='js/bootstrap-table.min.js') }}"></script>
+
+{% endblock %}

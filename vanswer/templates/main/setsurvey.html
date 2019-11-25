@@ -1,0 +1,80 @@
+{% extends 'base.html' %}
+
+{% block title %}问卷设置{% endblock %}
+
+{% block styles %}
+    {{ super() }}
+    <link href="https://cdn.bootcss.com/bootstrap-datetimepicker/4.17.47/css/bootstrap-datetimepicker.min.css" rel="stylesheet">
+{% endblock %}
+
+{% block content %}
+    <div class="container">
+	<div class="row">
+	<div class='col-md-2'>
+	</div>
+    <div class='col-md-8'>
+		<div class="card w-100">
+            <h3 class="card-header">问卷设置</h3>
+            <div class="card-body">
+                <form method="post">
+                    {{ form.csrf_token }} <!-- 渲染CSRF令牌隐藏字段 -->
+                    <div class="form-group">
+					<div class="custom-control custom-switch">
+                        {{ form.ispublic(class='custom-control-input') }}
+                        {{ form.ispublic.label(class='custom-control-label') }}
+{#					  <input type="checkbox" name="checkbox" class="custom-control-input" id="customSwitch1">#}
+{#					  <label class="custom-control-label" for="customSwitch1">是否使用“探索”公开</label>#}
+					</div>
+				    </div>
+				    <div class="form-group">
+                        {{ form.surveynumber(class='form-control') }}
+                        {{ form.surveynumber.label }}
+{#					<label for="formGroupExampleInput">回收答卷上限份数</label>#}
+{#					<input name="surveynumber" type="text" class="form-control" id="formGroupExampleInput" placeholder="9999">#}
+				    </div>
+				    <div class="form-group">
+                        {{ form.reward(class='form-control') }}
+                        {{ form.reward.label }}
+{#					<label for="formGroupExampleInput">单份答卷回答奖励</label>#}
+{#					<input type="text" name="reward" class="form-control" id="formGroupExampleInput" placeholder="0">#}
+				    </div>
+				    <div class="form-group">
+
+					<label>选择开始时间：</label>
+					<!--指定 date标记-->
+					<div class='input-group date' id='datetimepicker1' >
+						{{ form.starttime(class='form-control') }}
+                        <span class="input-group-addon">
+							<span class="glyphicon glyphicon-calendar"></span>
+						</span>
+					</div>
+
+				</div>
+				    <div class="form-group">
+					<label>选择结束时间：</label>
+					<!--指定 date标记-->
+					<div class='input-group date' id='datetimepicker2' >
+                        {{ form.endtime(class='form-control') }}
+{#						<input type='text' name="endtime" class="form-control" placeholder="无" />#}
+						<span class="input-group-addon">
+							<span class="glyphicon glyphicon-calendar"></span>
+						</span>
+					</div>
+				</div>
+                    {{ form.submit(class='btn btn-primary')}}
+                </form>
+{#				<button id="submit" name="submit" type="submit" class="btn btn-primary mb-2">确定</button>#}
+			</div>
+		</div>
+    </div>
+	<div class='col-md-2'>
+	</div>
+	</div>
+    </div>
+{% endblock %}
+
+{% block scripts %}
+    {{ super() }}
+    <script src="{{ url_for('static', filename='js/moment-with-locales.min.js') }}"></script>
+    <script src="https://cdn.bootcss.com/bootstrap-datetimepicker/4.17.47/js/bootstrap-datetimepicker.min.js"></script>
+{% endblock %}

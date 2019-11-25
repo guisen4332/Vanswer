@@ -12,12 +12,12 @@ from flask import render_template, flash, redirect, url_for, current_app, \
 from flask_login import login_required, current_user
 from sqlalchemy.sql.expression import func
 
-from albumy.decorators import confirm_required, permission_required
-from albumy.extensions import db
-from albumy.forms.main import DescriptionForm, TagForm, CommentForm
-from albumy.models import User, Photo, Tag, Follow, Collect, Comment, Notification
-from albumy.notifications import push_comment_notification, push_collect_notification
-from albumy.utils import rename_image, resize_image, redirect_back, flash_errors
+from vanswer.decorators import confirm_required, permission_required
+from vanswer.extensions import db
+from vanswer.forms.main import DescriptionForm, TagForm, CommentForm, SurveyForm
+from vanswer.models import User, Photo, Tag, Follow, Collect, Comment, Notification
+from vanswer.notifications import push_comment_notification, push_collect_notification
+from vanswer.utils import rename_image, resize_image, redirect_back, flash_errors
 
 main_bp = Blueprint('main', __name__)
 
@@ -399,3 +399,11 @@ def delete_tag(photo_id, tag_id):
 
     flash('Tag deleted.', 'info')
     return redirect(url_for('.show_photo', photo_id=photo_id))
+
+@main_bp.route('/setsurvey/<int:survey_id>', methods=['POST'])
+@login_required
+def setsurvey():
+    form = SurveyForm()
+    if form.validate_on_submit():
+        flash()
+    return render_template('setsurvey.html', form=form)
