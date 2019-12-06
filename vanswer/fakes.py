@@ -1,32 +1,31 @@
 # -*- coding: utf-8 -*-
 """
-    :author: Grey Li (李辉)
-    :url: http://greyli.com
-    :copyright: © 2018 Grey Li <withlihui@gmail.com>
+    :author: 杜桂森
+    :url: https://github.com/guisen18
+    :copyright: © 2019 guisen <duguisen@foxmail.com>
     :license: MIT, see LICENSE for more details.
 """
+import json
 import os
 import random
 
 from PIL import Image
 from faker import Faker
+from datetime import timedelta
 from flask import current_app
 from sqlalchemy.exc import IntegrityError
 
-from albumy.extensions import db
-from albumy.models import User, Photo, Tag, Comment, Notification
+from vanswer.extensions import db
+from vanswer.models import User, Notification, Survey, QuestionOption, SurveyQuestion
 
-fake = Faker()
+fake = Faker('zh_CN')
 
 
 def fake_admin():
-    admin = User(name='Grey Li',
-                 username='greyli',
-                 email='admin@helloflask.com',
-                 bio=fake.sentence(),
-                 website='http://greyli.com',
+    admin = User(username='admin',
+                 email='admin@vanswer.com',
                  confirmed=True)
-    admin.set_password('helloflask')
+    admin.set_password('12345678')
     notification = Notification(message='Hello, welcome to Albumy.', receiver=admin)
     db.session.add(notification)
     db.session.add(admin)
@@ -35,12 +34,8 @@ def fake_admin():
 
 def fake_user(count=10):
     for i in range(count):
-        user = User(name=fake.name(),
-                    confirmed=True,
+        user = User(confirmed=True,
                     username=fake.user_name(),
-                    bio=fake.sentence(),
-                    location=fake.city(),
-                    website=fake.url(),
                     member_since=fake.date_this_decade(),
                     email=fake.email())
         user.set_password('123456')
@@ -58,6 +53,117 @@ def fake_follow(count=30):
     db.session.commit()
 
 
+def fake_survey(survey_count=20, question_count=80, rating_question_num=20, option_count=300, rating_option_num=60):
+    # survey
+    for i in range(survey_count):
+        start_timestamp = fake.date_time_this_month(before_now=True, after_now=False, tzinfo=None)
+        end_timestamp = fake.date_time_this_year(before_now=False, after_now=True, tzinfo=None)
+        survey = Survey(
+            author=User.query.get(random.randint(1, User.query.count())),
+            title=fake.sentence(),
+            is_explore_public=True,
+            reward=fake.random_digit(),
+            start_timestamp=start_timestamp,
+            end_timestamp=end_timestamp,
+            timestamp=fake.date_time_between_dates(datetime_start=start_timestamp - timedelta(days=fake.random_digit(),
+                                                                                              hours=fake.random_digit()),
+                                                   datetime_end=start_timestamp,
+                                                   tzinfo=None)
+        )
+        db.session.add(survey)
+    db.session.commit()
+
+    # question
+    for i in range(question_count - rating_question_num):
+        question = SurveyQuestion(
+            name=fake.sentence(),
+            type=fake.random_element(elements=('radiogroup', 'dropdown', 'checkbox')),
+            survey=Survey.query.get(random.randint(1, Survey.query.count()))
+        )
+        db.session.add(question)
+    for i in range(rating_question_num):
+        question = SurveyQuestion(
+            name=fake.sentence(),
+            type='rating',
+            survey=Survey.query.get(random.randint(1, Survey.query.count()))
+        )
+        db.session.add(question)
+    db.session.commit()
+
+    # option
+    for i in range(option_count - rating_option_num):
+        option = QuestionOption(choice_text=fake.sentence()
+                                # question=SurveyQuestion.query.filter(SurveyQuestion.type != 'rating')
+                                # .limit(1).offset(random.randint(0, option_count-rating_question_num-1)).first()
+                                )
+        db.session.add(option)
+    # for i in range(rating_option_num):
+    #     option = QuestionOption(choice_value=fake.random_digit(),
+    #                             qustion=SurveyQuestion.query.filter(SurveyQuestion.type == 'rating')
+    #                             .get(random.randint(1, rating_question_num))
+    #                             )
+    #     db.session.add(option)
+    db.session.commit()
+
+    questions = SurveyQuestion.query.filter(SurveyQuestion.type != 'rating').all()
+    for question in questions:
+        for i in range(random.randint(2, 5)):
+            question.options.append(QuestionOption.query.filter(QuestionOption.question == None).first())
+    db.session.commit()
+
+    surveys = Survey.query.all()
+    for survey in surveys:
+        elements = list()
+        questions = SurveyQuestion.query.with_parent(survey).all()
+        for question in questions:
+            element = {'type': question.type,
+                       'name': question.name,
+                       }
+            if question.type != 'rating':
+                choices = QuestionOption.query.with_parent(question).all()
+                element.update({'choices': list([choice.choice_text for choice in choices])})
+            else:
+                element.update({'rateMax': fake.random_digit()})
+            elements.append(element)
+        pages = {'name': 'page1', 'elements': elements}
+        content = {'title': survey.title, 'pages': [pages]}
+        survey.content = json.dumps(content)
+    db.session.commit()
+
+
+# def fake_question(question_count=80, rating_question_num=20):
+#     for i in range(question_count-rating_question_num):
+#         question = QuestionOption(
+#             name=fake.sentence(),
+#             type=fake.random_element(elements=('one choice', 'multiple choice')),
+#             survey=Survey.query.get(random.randint(1, Survey.query.count()))
+#         )
+#         db.session.add(question)
+#     for i in range(rating_question_num):
+#         question = QuestionOption(
+#             name=fake.sentence(),
+#             type='rating'
+#         )
+#         db.session.add(question)
+#     db.session.commit()
+
+
+# def fake_option(option_count=120, rating_option_num=30):
+#     for i in range(option_count-rating_option_num):
+#         option = QuestionOption(choice_text=fake.sentence(),
+#                                 qustion=SurveyQuestion.query.filter(SurveyQuestion.type != 'rating')
+#                                 .get(random.randint(1, questino_count-rating_question_num))
+#                                 )
+#         db.session.add(option)
+#     for i in range(rating_option_num):
+#         option = QuestionOption(choice_value=fake.random_digit(),
+#                                 qustion=SurveyQuestion.query.filter(SurveyQuestion.type == 'rating')
+#                                 .get(random.randint(1, rating_question_num))
+#                                 )
+#         db.session.add(option)
+#     db.session.commit()
+
+
 def fake_tag(count=20):
     for i in range(count):
         tag = Tag(name=fake.word())
@@ -68,40 +174,10 @@ def fake_tag(count=20):
             db.session.rollback()
 
 
-def fake_photo(count=30):
-    # photos
-    upload_path = current_app.config['ALBUMY_UPLOAD_PATH']
-    for i in range(count):
-        print(i)
-
-        filename = 'random_%d.jpg' % i
-        r = lambda: random.randint(128, 255)
-        img = Image.new(mode='RGB', size=(800, 800), color=(r(), r(), r()))
-        img.save(os.path.join(upload_path, filename))
-
-        photo = Photo(
-            description=fake.text(),
-            filename=filename,
-            filename_m=filename,
-            filename_s=filename,
-            author=User.query.get(random.randint(1, User.query.count())),
-            timestamp=fake.date_time_this_year()
-        )
-
-        # tags
-        for j in range(random.randint(1, 5)):
-            tag = Tag.query.get(random.randint(1, Tag.query.count()))
-            if tag not in photo.tags:
-                photo.tags.append(tag)
-
-        db.session.add(photo)
-    db.session.commit()
-
-
 def fake_collect(count=50):
     for i in range(count):
         user = User.query.get(random.randint(1, User.query.count()))
-        user.collect(Photo.query.get(random.randint(1, Photo.query.count())))
+        user.collect(Survey.query.get(random.randint(1, Survey.query.count())))
     db.session.commit()
 
 

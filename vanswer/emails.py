@@ -1,8 +1,8 @@
 # -*- coding: utf-8 -*-
 """
-    :author: Grey Li (李辉)
-    :url: http://greyli.com
-    :copyright: © 2018 Grey Li <withlihui@gmail.com>
+    :author: 杜桂森
+    :url: https://github.com/guisen18
+    :copyright: © 2019 guisen <duguisen@foxmail.com>
     :license: MIT, see LICENSE for more details.
 """
 from threading import Thread
@@ -10,7 +10,7 @@ from threading import Thread
 from flask import current_app, render_template
 from flask_mail import Message
 
-from albumy.extensions import mail
+from vanswer.extensions import mail
 
 
 def _send_async_mail(app, message):
@@ -19,7 +19,7 @@ def _send_async_mail(app, message):
 
 
 def send_mail(to, subject, template, **kwargs):
-    message = Message(current_app.config['ALBUMY_MAIL_SUBJECT_PREFIX'] + subject, recipients=[to])
+    message = Message(current_app.config['VANSWER_MAIL_SUBJECT_PREFIX'] + subject, recipients=[to])
     message.body = render_template(template + '.txt', **kwargs)
     message.html = render_template(template + '.html', **kwargs)
     app = current_app._get_current_object()

@@ -1,5 +1,9 @@
 {% extends 'base.html' %}
+{% from 'bootstrap/form.html' import render_form %}
+{% from 'bootstrap/nav.html' import render_nav_item %}
+{% from 'bootstrap/pagination.html' import render_pagination %}
 {% from 'macros.html' import photo_card with context %}
+{% from 'macros.html' import searchbar with context %}
 
 {% block title %}探索{% endblock %}
 
@@ -8,49 +12,76 @@
         <div class="container">
             <div class="row m-2">
                 <div class="col-md-9">
-                    {% include 'main/_searchbar.html' %}
+                    {{ searchbar(class='expore') }}
+{#                    {% include 'main/_searchbar.html' %}#}
                 </div>
                 <div class="col-md-3">
+
                 </div>
             </div>
             <div class="row m-2">
                 <div class="col-md-9">
                     {% if surveys %}
                         {% for survey in surveys %}
-                            <div class="container m-2" data-id="{{ survey.id }}" data-name="{{ survey.name }}">
+                            <div class="container m-3" data-id="{{ survey.id }}" data-name="{{ survey.name }}">
                         <div class="card">
                             <div class="row">
                                 <div class="col-md-9">
                                     <div class="container">
                                         <div class="row">
-                                            <a class="black2blue font-weight-bold nav-item nav-link" href="{{ url_for }}" target="_blank">
+                                            <a class="black2blue font-weight-bold nav-item nav-link" href="{{ url_for('main.fill_in_survey', survey_id=survey.id) }}" target="_blank">
                                                 <h5>{{ survey.title }}</h5>
                                             </a>
                                         </div>
                                     </div>
                                 </div>
                                 <div class="col-md-3" >
-                                    <div class="text-left">
-                                        <a style="font-size: 10px">奖励：<a style="color: #007bff;font-size: 10px">{{ }}</a></a>
+                                    <div class="row">
+						                <div class="col-md-6">
+                                            <div class="text-left">
+                                                <a style="font-size: 10px">奖励：<a style="color: #007bff;font-size: 10px">{{ survey.reward }}</a></a>
+                                            </div>
+                                        </div>
+                                        <div class="col-md-6 ">
+                                            <div class="dropleft text-center">
+{#                                                <button type="button" class="oi oi-cog dropdown-toggle " data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">#}
+{#                                                设置#}
+{#                                                </button>#}
+                                                <span class="oi oi-cog " data-toggle="dropdown" aria-haspopup="true" aria-expanded="false"></span>
+                                              <div class="dropdown-menu ">
+                                                <a class="dropdown-item " href="{{ url_for('main.collect', survey_id=survey.id) }}">收藏</a>
+                                                <a class="dropdown-item " href="{{ url_for('main.report_survey', survey_id=survey.id) }}">举报</a>
+                                              </div>
+                                            </div>
+                                        </div>
                                     </div>
                                     <div class="text-left">
-                                        <a style="font-size: 10px">时间：{{  }}</a>
+{#                                        <a style="font-size: 10px">结束时间：{{ survey.end_timestamp.strftime("%Y-%m-%d %H:%M") }}</a>#}
+                                        <a style="font-size: 10px">结束时间：{{ moment(survey.end_timestamp).format("Y-M-D HH:MM") }}</a>
                                     </div>
                                 </div>
                             </div>
                         </div>
                     </div>
+                        {% endfor %}
+                    {% else %}
+                        <div class="tip text-center">
+                            <h3>暂无问卷.</h3>
+                        </div>
+                    {% endif %}
                 </div>
                 <div class="col-md-3">
                     <div class="nav nav-pills flex-column" role="tablist" aria-orientation="vertical">
-                        {{ render_nav_item('user.edit_profile', '全部问卷') }}
-                        {{ render_nav_item('user.notification_setting', '收藏问卷') }}
+                        <a class="nav-item nav-link {% if request.full_path == '/explore?'%}active{% endif %}"
+                           href="{{ url_for('main.explore') }}">全部问卷</a>
+                        <a class="nav-item nav-link {% if request.full_path == '/explore?type=collected' %}active{% endif %}"
+                           href="{{ url_for('main.explore', type='collected') }}">收藏问卷</a>
                     </div>
                 </div>
             </div>
         </div>
     </div>
-    {% if photos %}
+    {% if surveys %}
         {{ render_pagination(pagination, align='center') }}
     {% endif %}
 {% endblock %}

@@ -1,0 +1,86 @@
+{% extends 'admin/index.html' %}
+{% from 'bootstrap/pagination.html' import render_pagination %}
+
+{% block title %}问卷管理{% endblock %}
+
+{% block content %}
+    <nav aria-label="breadcrumb">
+        <ol class="breadcrumb">
+            {{ render_breadcrumb_item('admin.index', '控制面板') }}
+            {{ render_breadcrumb_item('admin.manage_survey', '图片管理') }}
+        </ol>
+    </nav>
+    <div class="page-header">
+        <h1>问卷
+            <small class="text-muted">{{ pagination.total }}</small>
+            <span class="dropdown">
+            <button class="btn btn-secondary btn-sm" type="button" id="dropdownMenuButton" data-toggle="dropdown"
+                    aria-haspopup="true" aria-expanded="false">
+                {{ order_rule }} 排序 <span class="oi oi-elevator"></span>
+            </button>
+            <div class="dropdown-menu" aria-labelledby="dropdownMenuButton">
+                {% if order_rule == 'flag' %}
+                    <a class="dropdown-item" href="{{ url_for('.manage_survey', order='by_time') }}">时间排序</a>
+                {% else %}
+                    <a class="dropdown-item" href="{{ url_for('.manage_survey', order='by_flag') }}">举报数排序</a>
+                {% endif %}
+            </div>
+        </span>
+        </h1>
+    </div>
+    {% if surveys %}
+        <table class="table table-striped">
+            <thead>
+            <tr>
+                <th>題目</th>
+                <th>作者</th>
+                <th>举报数</th>
+                <th>日期</th>
+                <th>处理</th>
+            </tr>
+            </thead>
+            {% for survey in surveys %}
+                <tr>
+{#                    <td>#}
+{#                        <a href="{{ url_for('main.show_survey', survey_id=survey.id) }}">#}
+{#                            <img src="{{ url_for('main.get_image', filename=survey.filename_s) }}" width="250">#}
+{#                        </a>#}
+{#                    </td>#}
+                    <td>{{ survey.title }}</td>
+{#                    <td>#}
+{#                        {% if survey.tags %}#}
+{#                            {% for tag in survey.tags %}#}
+{#                                <form class="inline" method="post"#}
+{#                                      action="{{ url_for('admin.delete_tag', tag_id=tag.id, next=request.full_path) }}">#}
+{#                                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>#}
+{#                                    <button type="submit" class="btn badge badge-danger mb-1"#}
+{#                                            onclick="return confirm('Are you sure?');">#}
+{#                                        {{ tag.name }} <span class="oi oi-trash" aria-hidden="true">#}
+{#                                </span>#}
+{#                                    </button>#}
+{#                                </form>#}
+{#                            {% endfor %}#}
+{#                        {% endif %}#}
+{#                    </td>#}
+                    <td>
+                        <a>{{ survey.author.username }}</a>
+                    </td>
+                    <td>{{ survey.flag }}</td>
+                    <td>{{ moment(survey.timestamp).format('LL') }}</td>
+                    <td>
+                        <form class="inline" method="post"
+                              action="{{ url_for('main.delete_survey', survey_id=survey.id, next=request.full_path) }}">
+                            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+                            <button type="submit" class="btn btn-danger btn-sm"
+                                    onclick="return confirm('确定删除?');">刪除
+                            </button>
+                        </form>
+                    </td>
+                </tr>
+            {% endfor %}
+        </table>
+        <div class="page-footer">{{ render_pagination(pagination) }}</div>
+    {% else %}
+        <div class="tip"><h5>No surveys.</h5></div>
+    {% endif %}
+{% endblock %}

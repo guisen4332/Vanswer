@@ -1,8 +1,8 @@
 # -*- coding: utf-8 -*-
 """
-    :author: Grey Li (李辉)
-    :url: http://greyli.com
-    :copyright: © 2018 Grey Li <withlihui@gmail.com>
+    :author: 杜桂森
+    :url: https://github.com/guisen18
+    :copyright: © 2019 guisen <duguisen@foxmail.com>
     :license: MIT, see LICENSE for more details.
 """
 import os
@@ -25,23 +25,19 @@ class Operations:
 
 
 class BaseConfig:
-    ALBUMY_ADMIN_EMAIL = os.getenv('ALBUMY_ADMIN', 'admin@helloflask.com')
-    ALBUMY_PHOTO_PER_PAGE = 12
-    ALBUMY_COMMENT_PER_PAGE = 15
-    ALBUMY_NOTIFICATION_PER_PAGE = 20
-    ALBUMY_USER_PER_PAGE = 20
-    ALBUMY_MANAGE_PHOTO_PER_PAGE = 20
-    ALBUMY_MANAGE_USER_PER_PAGE = 30
-    ALBUMY_MANAGE_TAG_PER_PAGE = 50
-    ALBUMY_MANAGE_COMMENT_PER_PAGE = 30
-    ALBUMY_SEARCH_RESULT_PER_PAGE = 20
-    ALBUMY_MAIL_SUBJECT_PREFIX = '[Albumy]'
-    ALBUMY_UPLOAD_PATH = os.path.join(basedir, 'uploads')
-    ALBUMY_PHOTO_SIZE = {'small': 400,
+    VANSWER_ADMIN_EMAIL = os.getenv('VANSWER_ADMIN', 'admin@helloflask.com')
+    VANSWER_SURVEY_PER_PAGE = 12
+    VANSWER_NOTIFICATION_PER_PAGE = 20
+    VANSWER_USER_PER_PAGE = 20
+    VANSWER_MANAGE_SURVEY_PER_PAGE = 20
+    VANSWER_MANAGE_USER_PER_PAGE = 30
+    VANSWER_SEARCH_RESULT_PER_PAGE = 20
+    VANSWER_MAIL_SUBJECT_PREFIX = '[Vanswer]'
+    VANSWER_PHOTO_SIZE = {'small': 400,
                          'medium': 800}
-    ALBUMY_PHOTO_SUFFIX = {
-        ALBUMY_PHOTO_SIZE['small']: '_s',  # thumbnail
-        ALBUMY_PHOTO_SIZE['medium']: '_m',  # display
+    VANSWER_PHOTO_SUFFIX = {
+        VANSWER_PHOTO_SIZE['small']: '_s',  # thumbnail
+        VANSWER_PHOTO_SIZE['medium']: '_m',  # display
     }
 
     SECRET_KEY = os.getenv('SECRET_KEY', 'secret string')
@@ -51,15 +47,17 @@ class BaseConfig:
 
     SQLALCHEMY_TRACK_MODIFICATIONS = False
 
-    AVATARS_SAVE_PATH = os.path.join(ALBUMY_UPLOAD_PATH, 'avatars')
+    AVATARS_SAVE_PATH = os.path.join(basedir, 'avatars')
     AVATARS_SIZE_TUPLE = (30, 100, 200)
 
     MAIL_SERVER = os.getenv('MAIL_SERVER')
-    MAIL_PORT = 465
-    MAIL_USE_SSL = True
+    # MAIL_PORT = os.getenv('MAIL_PORT', 465)
+    # MAIL_USE_SSL = True
+    MAIL_PORT = 587
+    MAIL_USE_TLS = True
     MAIL_USERNAME = os.getenv('MAIL_USERNAME')
     MAIL_PASSWORD = os.getenv('MAIL_PASSWORD')
-    MAIL_DEFAULT_SENDER = ('Albumy Admin', MAIL_USERNAME)
+    MAIL_DEFAULT_SENDER = 'robot@vanswer.com'
 
     DROPZONE_ALLOWED_FILE_TYPE = 'image'
     DROPZONE_MAX_FILE_SIZE = 3

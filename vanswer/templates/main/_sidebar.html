@@ -1,8 +1,19 @@
+{% from 'bootstrap/form.html' import render_form %}
+{% from 'bootstrap/nav.html' import render_nav_item %}
 <div class="nav nav-pills flex-column" role="tablist" aria-orientation="vertical">
-    {{ render_nav_item('user.edit_profile', '全部问卷') }}
-    {{ render_nav_item('user.change_avatar', '已发布问卷') }}
-    {{ render_nav_item('user.change_password', '未发布问卷') }}
-    {{ render_nav_item('user.change_email_request', '结束问卷') }}
-    {{ render_nav_item('user.notification_setting', '收藏问卷') }}
-    {{ render_nav_item('user.privacy_setting', '回收站') }}
+    <a class="nav-item nav-link {% if request.full_path == '/?type=all'
+    or request.full_path == '/?' %}active{% endif %}"
+       href="{{ url_for('main.index', type='all') }}">全部问卷</a>
+    <a class="nav-item nav-link {% if request.full_path == '/?type=published' %}active{% endif %}"
+       href="{{ url_for('main.index', type='published') }}">已发布问卷</a>
+    <a class="nav-item nav-link {% if request.full_path == '/?type=unpublished' %}active{% endif %}"
+       href="{{ url_for('main.index', type='unpublished') }}">未发布问卷</a>
+    <a class="nav-item nav-link {% if request.full_path == '/?type=closed' %}active{% endif %}"
+       href="{{ url_for('main.index', type='closed') }}">结束问卷</a>
+{#    {{ render_nav_item('main.index', '全部问卷', type='all') }}#}
+{#    {{ render_nav_item('main.index', '已发布问卷', type='published') }}#}
+{#    {{ render_nav_item('main.index', '未发布问卷', type='unpublished') }}#}
+{#    {{ render_nav_item('main.index', '结束问卷', type='closed') }}#}
+{#    {{ render_nav_item('main.index', '收藏问卷', type='collected') }}#}
+{#    {{ render_nav_item('main.privacy_setting', '回收站') }}#}
 </div>

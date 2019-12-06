@@ -1,12 +1,14 @@
 # -*- coding: utf-8 -*-
 """
-    :author: Grey Li (李辉)
-    :url: http://greyli.com
-    :copyright: © 2018 Grey Li <withlihui@gmail.com>
+    :author: 杜桂森
+    :url: https://github.com/guisen18
+    :copyright: © 2019 guisen <duguisen@foxmail.com>
     :license: MIT, see LICENSE for more details.
 """
 import os
+import re
 import uuid
+from datetime import datetime
 
 try:
     from urlparse import urlparse, urljoin
@@ -19,9 +21,9 @@ from flask import current_app, request, url_for, redirect, flash
 from itsdangerous import BadSignature, SignatureExpired
 from itsdangerous import TimedJSONWebSignatureSerializer as Serializer
 
-from albumy.extensions import db
-from albumy.models import User
-from albumy.settings import Operations
+from vanswer.extensions import db
+from vanswer.models import User
+from vanswer.settings import Operations
 
 
 def generate_token(user, operation, expire_in=None, **kwargs):
@@ -104,3 +106,40 @@ def flash_errors(form):
                 getattr(form, field).label.text,
                 error
             ))
+
+
+def get_time_str(time):
+    return re.sub(r'[- :.]', '', time.__str__())
+
+
+def get_question_type(question_type):
+    type_map = {"rating": "rating", "dropdown": "one choice", "radiogroup": "multiple choice", "checkbox": "one choice"}
+    return type_map[question_type]
+
+
+def get_all_surveys(survey):
+    return survey.query
+
+
+def get_published_surveys(survey):
+    return survey.query \
+        .filter(survey.end_timestamp > datetime.utcnow(),
+                datetime.utcnow() > survey.start_timestamp)
+
+
+def get_unpublished_surveys(survey):
+    return survey.query \
+        .filter(survey.start_timestamp > datetime.utcnow())
+
+
+def get_closed_surveys(survey):
+    return survey.query \
+        .filter(survey.end_timestamp < datetime.utcnow())
+
+
+get_survey = {
+    'all': get_all_surveys,
+    'published': get_published_surveys,
+    'unpublished': get_unpublished_surveys,
+    'closed': get_closed_surveys,
+    }

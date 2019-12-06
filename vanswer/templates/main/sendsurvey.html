@@ -1,0 +1,40 @@
+{% extends 'base.html' %}
+
+{% block title %}发送问卷{% endblock %}
+
+{% block styles %}
+    {{ super() }}
+{% endblock %}
+
+{% block content %}
+    <div class="page-header">
+        <h1>发送</h1>
+    </div>
+    <div class="row">
+        <div class="col-md-2"></div>
+        <div class="col-md-8">
+            <div class="container">
+                <div class="card  ">
+                    <div class="card-header">
+                        <h3 class=" text-center">分享链接</h3>
+                    </div>
+                    <div class="card-body">
+                        <div id="qrcode" align="center"></div>
+                    </div>
+                    <div class="card-footer">
+                        <h5 class="text-center"><a href="{{ url_for('main.fill_in_survey', survey_id=survey_id, _external=True) }}">{{ url_for('main.fill_in_survey', survey_id=survey_id, _external=True) }}</a></h5>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-2"></div>
+    </div>
+{% endblock %}
+
+{% block scripts %}
+    {{ super() }}
+    <script src="{{ url_for('static', filename='js/qrcode.min.js') }}"></script>
+    <script type="text/javascript">
+        new QRCode(document.getElementById("qrcode"), "{{ url_for('main.fill_in_survey', survey_id=survey_id, _external=True) }}");
+    </script>
+{% endblock %}

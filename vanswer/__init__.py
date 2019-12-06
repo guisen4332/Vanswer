@@ -1,8 +1,8 @@
 # -*- coding: utf-8 -*-
 """
-    :author: Grey Li (李辉)
-    :url: http://greyli.com
-    :copyright: © 2018 Grey Li <withlihui@gmail.com>
+    :author: 杜桂森
+    :url: https://github.com/guisen18
+    :copyright: © 2019 guisen <duguisen@foxmail.com>
     :license: MIT, see LICENSE for more details.
 """
 import os
@@ -12,21 +12,21 @@ from flask import Flask, render_template
 from flask_login import current_user
 from flask_wtf.csrf import CSRFError
 
-from albumy.blueprints.admin import admin_bp
-from albumy.blueprints.ajax import ajax_bp
-from albumy.blueprints.auth import auth_bp
-from albumy.blueprints.main import main_bp
-from albumy.blueprints.user import user_bp
-from albumy.extensions import bootstrap, db, login_manager, mail, dropzone, moment, whooshee, avatars, csrf
-from albumy.models import Role, User, Photo, Tag, Follow, Notification, Comment, Collect, Permission
-from albumy.settings import config
+from vanswer.blueprints.admin import admin_bp
+from vanswer.blueprints.ajax import ajax_bp
+from vanswer.blueprints.auth import auth_bp
+from vanswer.blueprints.main import main_bp
+from vanswer.blueprints.user import user_bp
+from vanswer.extensions import bootstrap, db, login_manager, mail, moment, whooshee, avatars, csrf
+from vanswer.models import Role, User, Notification, Collect, Permission, Survey, SurveyQuestion, QuestionOption
+from vanswer.settings import config
 
 
 def create_app(config_name=None):
     if config_name is None:
         config_name = os.getenv('FLASK_CONFIG', 'development')
 
-    app = Flask('albumy')
+    app = Flask('vanswer')
     
     app.config.from_object(config[config_name])
 
@@ -36,7 +36,6 @@ def create_app(config_name=None):
     register_errorhandlers(app)
     register_shell_context(app)
     register_template_context(app)
-
     return app
 
 
@@ -45,7 +44,7 @@ def register_extensions(app):
     db.init_app(app)
     login_manager.init_app(app)
     mail.init_app(app)
-    dropzone.init_app(app)
+    # dropzone.init_app(app)
     moment.init_app(app)
     whooshee.init_app(app)
     avatars.init_app(app)
@@ -63,8 +62,8 @@ def register_blueprints(app):
 def register_shell_context(app):
     @app.shell_context_processor
     def make_shell_context():
-        return dict(db=db, User=User, Photo=Photo, Tag=Tag,
-                    Follow=Follow, Collect=Collect, Comment=Comment,
+        return dict(db=db, User=User, Survey=Survey, SurveyQuestion=SurveyQuestion,
+                    QuestionOption=QuestionOption, Collect=Collect,
                     Notification=Notification)
 
 
@@ -118,7 +117,7 @@ def register_commands(app):
 
     @app.cli.command()
     def init():
-        """Initialize Albumy."""
+        """Initialize Vanswer."""
         click.echo('Initializing the database...')
         db.create_all()
 
@@ -129,15 +128,12 @@ def register_commands(app):
 
     @app.cli.command()
     @click.option('--user', default=10, help='Quantity of users, default is 10.')
-    @click.option('--follow', default=30, help='Quantity of follows, default is 30.')
-    @click.option('--photo', default=30, help='Quantity of photos, default is 30.')
-    @click.option('--tag', default=20, help='Quantity of tags, default is 20.')
+    @click.option('--survey_count', default=30, help='Quantity of photos, default is 30.')
     @click.option('--collect', default=50, help='Quantity of collects, default is 50.')
-    @click.option('--comment', default=100, help='Quantity of comments, default is 100.')
-    def forge(user, follow, photo, tag, collect, comment):
+    def forge(user, survey_count, collect):
         """Generate fake data."""
 
-        from albumy.fakes import fake_admin, fake_comment, fake_follow, fake_photo, fake_tag, fake_user, fake_collect
+        from vanswer.fakes import fake_admin, fake_comment, fake_follow, fake_tag, fake_user, fake_collect, fake_survey
 
         db.drop_all()
         db.create_all()
@@ -148,14 +144,14 @@ def register_commands(app):
         fake_admin()
         click.echo('Generating %d users...' % user)
         fake_user(user)
-        click.echo('Generating %d follows...' % follow)
-        fake_follow(follow)
-        click.echo('Generating %d tags...' % tag)
-        fake_tag(tag)
-        click.echo('Generating %d photos...' % photo)
-        fake_photo(photo)
-        click.echo('Generating %d collects...' % photo)
+        # click.echo('Generating %d follows...' % follow)
+        # fake_follow(follow)
+        # click.echo('Generating %d tags...' % tag)
+        # fake_tag(tag)
+        click.echo('Generating %d surveys...' % survey_count)
+        fake_survey(survey_count)
+        click.echo('Generating %d collects...' % survey_count)
         fake_collect(collect)
-        click.echo('Generating %d comments...' % comment)
-        fake_comment(comment)
-        click.echo('Done.')
+        # click.echo('Generating %d comments...' % comment)
+        # fake_comment(comment)
+        # click.echo('Done.')

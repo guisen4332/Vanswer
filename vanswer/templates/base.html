@@ -1,7 +1,7 @@
 {% from 'bootstrap/nav.html' import render_nav_item %}
 
 <!DOCTYPE html>
-<html lang="en">
+<html lang="zh-cn">
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
@@ -12,13 +12,14 @@
             <link rel="stylesheet" href="{{ url_for('static', filename='css/bootstrap.min.css') }}">
             <link rel="stylesheet" href="{{ url_for('static', filename='open-iconic/font/css/open-iconic-bootstrap.css') }}">
             <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+            <link rel="stylesheet" href="{{ url_for('static', filename='css/customstyle.css') }}">
         {% endblock styles %}
     {% endblock head %}
 </head>
 
 <body>
 {% block navbar %}
-    <nav class="navbar navbar-expand-lg navbar-light bg-light">
+    <nav class="navbar navbar-expand-lg navbar-light"  style="background-color: #e3f2fd;">
         <div class="container">
             <a class="navbar-brand" href="{{ url_for('main.index') }}">
                 <img src="{{ url_for('static', filename='favicon.ico') }}" alt="Vanswer">
@@ -66,7 +67,7 @@
 {#                                <span class="oi oi-person"></span> My Home#}
 {#                            </a>#}
                             <div class="dropdown-divider"></div>
-                            <a class="dropdown-item" href="{{ url_for('user.edit_profile') }}">
+                            <a class="dropdown-item" href="{{ url_for('user.profile') }}">
                                 <span class="oi oi-cog"></span> 设置
                             </a>
                             {% if current_user.can('MODERATE') %}
@@ -80,8 +81,8 @@
                         </div>
                     </div>
                 {% else %}
-                    <a class="btn btn-outline-primary" href="{{ url_for('auth.login') }}">Login</a>&nbsp;&nbsp;
-                    <a class="btn btn-primary" href="{{ url_for('auth.register') }}">Join Vanswer</a>
+                    <a class="btn btn-outline-primary" href="{{ url_for('auth.login') }}">登录</a>&nbsp;&nbsp;
+                    <a class="btn btn-primary" href="{{ url_for('auth.register') }}">注册</a>
                 {% endif %}
                 </div>
             </div>
@@ -89,7 +90,7 @@
     </nav>
 {% endblock %}
 
-<main>
+<main class="wrapper">
     <div class="container">
         {% for message in get_flashed_messages(with_categories=True) %}
             <div class="alert alert-{{ message[0] }}">
@@ -98,20 +99,35 @@
             </div>
         {% endfor %}
         {% block content %}{% endblock %}
-        {% block footer %}
-            <footer>
-                <p class="float-left">
-                    <small>&copy; 2019
-                        <a href="https://github.com/guisen18" title="Written by guisen">guisen</a> -
-                        <a href="https://github.com/guisen18" title="Fork me on GitHub">GitHub</a>
-                    </small>
-                </p>
-                <p class="float-right">
-                    <small>Survey and vote everywhere.</small>
-                </p>
-            </footer>
-        {% endblock %}
+{#        {% block footer %}#}
+{#            <footer>#}
+{#                <p class="float-left ">#}
+{#                    <small>&copy; 2019#}
+{#                        <a href="https://github.com/guisen18" title="Written by guisen">guisen</a> -#}
+{#                        <a href="https://github.com/guisen18" title="Fork me on GitHub">GitHub</a>#}
+{#                    </small>#}
+{#                </p>#}
+{#                <p class="float-right">#}
+{#                    <small>Survey and vote everywhere.</small>#}
+{#                </p>#}
+{#            </footer>#}
+{#        {% endblock %}#}
     </div>
+    {% block footer %}
+        <footer class="foot">
+            <div class="container">
+            <p class="float-left">
+                <small>&copy; 2019
+                    <a href="https://github.com/guisen18" title="Written by guisen">guisen</a> -
+                    <a href="https://github.com/guisen18" title="Fork me on GitHub">GitHub</a>
+                </small>
+            </p>
+            <p class="float-right">
+                <small>Survey and vote everywhere.</small>
+            </p>
+            </div>
+        </footer>
+    {% endblock %}
 </main>
 <div id="toast"></div>
 
@@ -120,6 +136,7 @@
     <script src="{{ url_for('static', filename='js/popper.min.js') }}"></script>
     <script src="{{ url_for('static', filename='js/bootstrap.min.js') }}"></script>
     {{ moment.include_moment(local_js=url_for('static', filename='js/moment-with-locales.min.js')) }}
+    {{ moment.locale("zh-cn") }}
     <script src="{{ url_for('static', filename='js/script.js') }}"></script>
     <script type="text/javascript">
         var csrf_token = "{{ csrf_token() }}";
@@ -128,7 +145,22 @@
         {% else %}
             var is_authenticated = false;
         {% endif %}
+
+        $(function(){
+            function footerPosition(){
+                $("footer").removeClass("fixed-bottom");
+                var contentHeight = document.body.scrollHeight,//网页正文全文高度
+                    winHeight = window.innerHeight;//可视窗口高度，不包括浏览器顶部工具栏
+                if(!(contentHeight > winHeight)){
+                    //当网页正文高度小于可视窗口高度时，为footer添加类fixed-bottom
+                    $("footer").addClass("fixed-bottom");
+                }
+            }
+            footerPosition();
+            $(window).resize(footerPosition);
+        });
     </script>
+
 {% endblock %}
 </body>
 </html>

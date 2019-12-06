@@ -1,20 +1,29 @@
 # -*- coding: utf-8 -*-
 """
-    :author: Grey Li (李辉)
-    :url: http://greyli.com
-    :copyright: © 2018 Grey Li <withlihui@gmail.com>
+    :author: 杜桂森
+    :url: https://github.com/guisen18
+    :copyright: © 2019 guisen <duguisen@foxmail.com>
     :license: MIT, see LICENSE for more details.
 """
 from wtforms import StringField, SelectField, BooleanField, SubmitField
 from wtforms import ValidationError
 from wtforms.validators import DataRequired, Length, Email
+from flask_wtf import FlaskForm
+from vanswer.models import User, Role
+from wtforms.validators import Regexp
 
-from albumy.forms.user import EditProfileForm
-from albumy.models import User, Role
 
+class EditProfileAdminForm(FlaskForm):
+    email = StringField('邮箱', validators=[DataRequired(), Length(1, 254), Email()])
+    username = StringField('用户名', validators=[DataRequired(), Length(1, 20),
+                                                   Regexp('^[a-zA-Z0-9]*$',
+                                                          message='用户名需仅有 a-z, A-Z 或 0-9.')])
+    Ethereum_id = StringField('以太账号', validators=[Length(0, 20), Regexp('^[a-zA-Z0-9]*$',
+                                                                        message='用户名需仅有 a-z, A-Z 或 0-9.')])
+    # Ethereum_id = StringField('以太账号', validators=[DataRequired(), Length(1, 20),
+    #                                                Regexp('^[a-zA-Z0-9]*$',
+    #                                                       message='用户名需仅有 a-z, A-Z 或 0-9.')])
 
-class EditProfileAdminForm(EditProfileForm):
-    email = StringField('Email', validators=[DataRequired(), Length(1, 254), Email()])
     role = SelectField('Role', coerce=int)
     active = BooleanField('Active')
     confirmed = BooleanField('Confirmed')
@@ -28,8 +37,8 @@ class EditProfileAdminForm(EditProfileForm):
 
     def validate_username(self, field):
         if field.data != self.user.username and User.query.filter_by(username=field.data).first():
-            raise ValidationError('The username is already in use.')
+            raise ValidationError('用户名已被使用.')
 
     def validate_email(self, field):
         if field.data != self.user.email and User.query.filter_by(email=field.data.lower()).first():
-            raise ValidationError('The email is already in use.')
+            raise ValidationError('邮箱已被使用.')

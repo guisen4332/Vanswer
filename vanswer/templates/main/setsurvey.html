@@ -3,8 +3,12 @@
 {% block title %}问卷设置{% endblock %}
 
 {% block styles %}
-    {{ super() }}
+{#    {{ super() }}#}
+    <link href="https://cdn.bootcss.com/bootstrap/3.3.7/css/bootstrap.min.css" rel="stylesheet">
     <link href="https://cdn.bootcss.com/bootstrap-datetimepicker/4.17.47/css/bootstrap-datetimepicker.min.css" rel="stylesheet">
+{% endblock %}
+
+{% block navbar %}
 {% endblock %}
 
 {% block content %}
@@ -20,47 +24,51 @@
                     {{ form.csrf_token }} <!-- 渲染CSRF令牌隐藏字段 -->
                     <div class="form-group">
 					<div class="custom-control custom-switch">
-                        {{ form.ispublic(class='custom-control-input') }}
                         {{ form.ispublic.label(class='custom-control-label') }}
+                        {{ form.ispublic(class='custom-control-input') }}
 {#					  <input type="checkbox" name="checkbox" class="custom-control-input" id="customSwitch1">#}
 {#					  <label class="custom-control-label" for="customSwitch1">是否使用“探索”公开</label>#}
 					</div>
 				    </div>
+                    <div class="form-group">
+                        {{ form.surveytitle.label }}
+                        {{ form.surveytitle(class='form-control') }}
+				    </div>
 				    <div class="form-group">
-                        {{ form.surveynumber(class='form-control') }}
                         {{ form.surveynumber.label }}
+                        {{ form.surveynumber(class='form-control') }}
 {#					<label for="formGroupExampleInput">回收答卷上限份数</label>#}
 {#					<input name="surveynumber" type="text" class="form-control" id="formGroupExampleInput" placeholder="9999">#}
 				    </div>
 				    <div class="form-group">
-                        {{ form.reward(class='form-control') }}
                         {{ form.reward.label }}
+                        {{ form.reward(class='form-control') }}
 {#					<label for="formGroupExampleInput">单份答卷回答奖励</label>#}
 {#					<input type="text" name="reward" class="form-control" id="formGroupExampleInput" placeholder="0">#}
 				    </div>
 				    <div class="form-group">
-
-					<label>选择开始时间：</label>
-					<!--指定 date标记-->
-					<div class='input-group date' id='datetimepicker1' >
-						{{ form.starttime(class='form-control') }}
-                        <span class="input-group-addon">
-							<span class="glyphicon glyphicon-calendar"></span>
-						</span>
-					</div>
-
-				</div>
+                        {{ form.starttime.label }}
+{#                        <label>选择开始时间：</label>#}
+                        <!--指定 date标记-->
+                        <div class='input-group date' id='datetimepicker1' >
+                            {{ form.starttime(class='form-control') }}
+                            <span class="input-group-addon">
+                                <span class="glyphicon glyphicon-calendar"></span>
+                            </span>
+                        </div>
+				    </div>
 				    <div class="form-group">
-					<label>选择结束时间：</label>
-					<!--指定 date标记-->
-					<div class='input-group date' id='datetimepicker2' >
-                        {{ form.endtime(class='form-control') }}
-{#						<input type='text' name="endtime" class="form-control" placeholder="无" />#}
-						<span class="input-group-addon">
-							<span class="glyphicon glyphicon-calendar"></span>
-						</span>
-					</div>
-				</div>
+                        {{ form.endtime.label }}
+{#                        <label>选择结束时间：</label>#}
+                        <!--指定 date标记-->
+                        <div class='input-group date' id='datetimepicker2' >
+                            {{ form.endtime(class='form-control') }}
+    {#						<input type='text' name="endtime" class="form-control" placeholder="无" />#}
+                            <span class="input-group-addon">
+                                <span class="glyphicon glyphicon-calendar"></span>
+                            </span>
+                        </div>
+				    </div>
                     {{ form.submit(class='btn btn-primary')}}
                 </form>
 {#				<button id="submit" name="submit" type="submit" class="btn btn-primary mb-2">确定</button>#}
@@ -74,7 +82,33 @@
 {% endblock %}
 
 {% block scripts %}
-    {{ super() }}
+{#    {{ super() }}#}
+    <script src="https://cdn.bootcss.com/jquery/3.3.1/jquery.js"></script>
+    <script src="https://cdn.bootcss.com/bootstrap/3.3.7/js/bootstrap.min.js"></script>
     <script src="{{ url_for('static', filename='js/moment-with-locales.min.js') }}"></script>
     <script src="https://cdn.bootcss.com/bootstrap-datetimepicker/4.17.47/js/bootstrap-datetimepicker.min.js"></script>
+    <script>
+        $(function () {
+            var picker1 = $('#datetimepicker1').datetimepicker({
+                format: 'YYYY-MM-DD HH:mm',
+                locale: moment.locale('zh-cn'),
+                //minDate: '2016-7-1'
+            });
+            var picker2 = $('#datetimepicker2').datetimepicker({
+                format: 'YYYY-MM-DD HH:mm',
+                locale: moment.locale('zh-cn')
+            });
+            //动态设置最小值
+            picker1.on('dp.change', function (e) {
+                picker2.data('DateTimePicker').minDate(e.date);
+            });
+            //动态设置最大值
+            picker2.on('dp.change', function (e) {
+                picker1.data('DateTimePicker').maxDate(e.date);
+            });
+
+        });
+    </script>
+{% endblock %}
+{% block footer %}
 {% endblock %}

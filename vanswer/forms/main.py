@@ -7,7 +7,7 @@
 """
 from flask_wtf import FlaskForm
 from wtforms import StringField, SubmitField, TextAreaField, BooleanField, FloatField, IntegerField
-from wtforms.validators import DataRequired, Optional, Length
+from wtforms.validators import DataRequired, Optional, Length, NumberRange
 
 
 # class DescriptionForm(FlaskForm):
@@ -26,9 +26,10 @@ from wtforms.validators import DataRequired, Optional, Length
 
 
 class SurveyForm(FlaskForm):
-    ispublic = BooleanField('是否使用探索公开', validators=[DataRequired()])
-    reward = FloatField('单份答卷回答奖励', default=0, render_kw={'placeholder': '0'})
-    surveynumber = IntegerField('回收答卷上限份数', default=9999, render_kw={'placeholder': '9999'})
-    starttime = StringField('starttime',render_kw={'placeholder': '无'})
-    endtime = StringField('endtime', render_kw={'placeholder': '无'})
+    ispublic = BooleanField('是否使用探索公开')
+    surveytitle = StringField('问卷标题')
+    reward = FloatField('单份答卷回答奖励', default=0, render_kw={'placeholder': '0'}, validators=[NumberRange(min=0)])
+    surveynumber = IntegerField('回收答卷上限份数', default=999999999, render_kw={'placeholder': '999999999'})
+    starttime = StringField('开始时间', render_kw={'placeholder': '无'})
+    endtime = StringField('结束时间', render_kw={'placeholder': '无'})
     submit = SubmitField('确定')

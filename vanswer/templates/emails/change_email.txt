@@ -1,7 +1,7 @@
 Hello {{ user.username }},
 
-Please visit the link below to verify your new email address:
+请访问以下链接以验证你的邮箱:
 
     {{ url_for('user.change_email', token=token, _external=True) }}
 
-(Please do not reply to this notification, this inbox is not monitored.)
+(请勿回复本邮件.)

@@ -1,4 +1,5 @@
 {% extends 'base.html' %}
+{% from 'macros.html' import get_question_type %}
 
 {% block title %}问卷分析{% endblock %}
 
@@ -10,36 +11,49 @@
 
 
 {% block content %}
-    <div class="container">
-        <div class="card m-5">
-        <p class="font-weight-bold text-center" >题目 <a style="color: gray">单选题 </a></p>
+    <div class="row">
+        <div class="col-md-2"></div>
+        <div class="col-md-8">
+        {% if survey %}
+            {% for question in survey.questions %}
+                <div class="card m-5">
+        <p class="font-weight-bold text-center" >{{ question.name }} <a style="color: gray">{{ get_question_type(question.type) }}</a></p>
         <table
-  id="table"
-  data-toggle="table"
-  data-show-footer="true"
-  data-url="/json">
-  <thead>
-    <tr>
-      <th  data-sortable="true" data-width="60" data-width-unit="%" data-field="id" data-footer-formatter="personFormatter">选项</th>
-      <th  data-sortable="true" data-width="20" data-width-unit="%" data-field="name" data-footer-formatter="numberFormatter">小计</th>
-      <th  data-sortable="true" data-width="20" data-width-unit="%" data-field="price" >比例</th>
-    </tr>
-  </thead>
-</table>
+              id="table"
+              data-toggle="table"
+              data-show-footer="true"
+              data-url="/question_result/{{ question.id }}">
+              <thead>
+                    <tr>
+                          <th  data-sortable="true" data-width="60" data-width-unit="%" data-field="option_name" >选项</th>
+                          <th  data-sortable="true" data-width="20" data-width-unit="%" data-field="poll">小计</th>
+                          <th  data-sortable="true" data-width="20" data-width-unit="%" data-field="percentage" >比例</th>
+                    </tr>
+              </thead>
+            <tfoot>
+                    <tr>
+                        {% if question.type != 'rating' %}
+                            <th class="th-inner">本题有效填写人次</th>
+                            <th class="th-inner">{{ question.survey.participants|length }}</th>
+                        {% else %}
+                            <th class="th-inner">本题有效填写人次(本题平均得分)</th>
+                            <th class="th-inner">{{ question.survey.questions|length }}({{ question.rating_average() }}) </th>
+                        {% endif %}
+                    </tr>
+             </tfoot>
+        </table>
     </div>
+            {% endfor %}
+        {% endif %}
+        </div>
+        <div class="col-md-2"></div>
     </div>
 {% endblock %}
 
 {% block scripts %}
-    {{ super() }}
-    <script>
-        function personFormatter() {
-            return '本题有效填写人次'
-        }
-        function numberFormatter() {
-            return "0"
-        }
-    </script>
+{#    {{ super() }}#}
+    <script src="{{ url_for('static', filename='js/jquery-3.3.1.min.js') }}"></script>
+    <script src="{{ url_for('static', filename='js/popper.min.js') }}"></script>
+    <script src="{{ url_for('static', filename='js/bootstrap.min.js') }}"></script>
     <script src="{{ url_for('static', filename='js/bootstrap-table.min.js') }}"></script>
-
 {% endblock %}

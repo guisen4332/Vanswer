@@ -1,36 +1,38 @@
 {% extends 'base.html' %}
 {% from 'bootstrap/pagination.html' import render_pagination %}
 {% from 'macros.html' import photo_card with context %}
+{% from 'macros.html' import searchbar with context %}
 
 {% block title %}Home{% endblock %}
 
 {% block content %}
 {% if current_user.is_authenticated %}
-    <div class="row justify-content-md-center">
+    <div class="row justify-content-md-center ">
         <div class="container">
             <div class="row m-2">
                 <div class="col-md-9">
-                    {% include 'main/_searchbar.html' %}
+                    {{ searchbar(class='index') }}
+{#                    {% include 'main/_searchbar.html' %}#}
                 </div>
                 <div class="col-md-3">
                     <ul class="nav nav-pills nav-justified">
                         <li class="nav-item">
-                            <a class="nav-link active" href="{{ url_for() }}">新建问卷</a>
+                            <a class="nav-link active" href="{{ url_for('main.new_survey') }}" target="_blank">新建问卷</a>
                         </li>
                     </ul>
                 </div>
             </div>
             <div class="row m-2">
-                <div class="col-md-9">
+                <div class="col-md-9 ">
                     {% if surveys %}
                         {% for survey in surveys %}
-                            <div class="container m-2" data-id="{{ survey.id }}" data-name="{{ survey.name }}">
+                            <div class="container m-4" data-id="{{ survey.id }}" data-name="{{ survey.name }}">
                                 <div class="card">
                                 <div class="row">
                                     <div class="col-md-9">
-                                            <div class="container ">
+                                            <div class="container">
                                                 <div class="row">
-                                                    <a class="black2blue font-weight-bold nav-item nav-link" href="{{ url_for }}" target="_blank">
+                                                    <a class="black2blue font-weight-bold nav-item nav-link" href="{{ url_for('main.display', survey_id=survey.id) }}" target="_blank">
                                                         <h5>{{ survey.title }}</h5>
                                                     </a>
                                                 </div>
@@ -38,37 +40,40 @@
                                             <div class="container">
                                                 <div class="row">
                                                     <div class="col-md-2 ">
-                                                        <a class="grey2blue" href="{{ url_for() }}" target="_blank">
-                                                            <span class="oi oi-file"></span>设计问卷
+                                                        <a class="grey2blue" href="{{ url_for('main.edit_survey', survey_id=survey.id) }}" target="_blank">
+                                                            <span class="oi oi-file"></span>设计
                                                         </a>
                                                     </div>
                                                     <div class="col-md-2 ">
-                                                        <a class="grey2blue" href="{{ url_for() }}">
-                                                            <span class="oi oi-external-link"></span>发送问卷
+                                                        <a class="grey2blue" href="{{ url_for('main.send_survey', survey_id=survey.id) }}" target="_blank">
+                                                            <span class="oi oi-external-link"></span>发送
                                                         </a>
                                                     </div>
                                                     <div class="col-md-2 ">
-                                                        <a class="grey2blue" href="{{ url_for() }}">
-                                                            <span class="oi oi-play-circle"></span>
-                                                            {% if survey %}
-                                                            发布
-                                                            {% else %}
-                                                            停止
-                                                            {% endif %}
-                                                        </a>
+                                                        {% if survey.is_published %}
+                                                            <a class="grey2blue" href="{{ url_for('main.change_survey_status', survey_id=survey.id, action='unpublish') }}">
+                                                                <span class="oi oi-play-circle"></span>
+                                                                停止
+                                                            </a>
+                                                        {% else %}
+                                                            <a class="grey2blue" href="{{ url_for('main.change_survey_status', survey_id=survey.id, action='publish') }}">
+                                                                <span class="oi oi-play-circle"></span>
+                                                                发布
+                                                            </a>
+                                                        {% endif %}
                                                     </div>
                                                     <div class="col-md-2 ">
-                                                        <a class="grey2blue" href="{{ url_for() }}" >
+                                                        <a class="grey2blue" href="{{ url_for('main.set_survey', survey_id=survey.id) }}"  target="_blank">
                                                             <span class="oi oi-cog"></span>设置
                                                         </a>
                                                     </div>
                                                     <div class="col-md-2 ">
-                                                        <a class="grey2blue" href="{{ url_for() }}" target="_blank">
+                                                        <a class="grey2blue" href="{{ url_for('main.analyse_survey', survey_id=survey.id) }}" target="_blank">
                                                             <span class="oi oi-bar-chart"></span>分析
                                                         </a>
                                                     </div>
-                                                    <div class="col-md-2 " href="{{ url_for() }}">
-                                                        <a class="grey2blue">
+                                                    <div class="col-md-2 ">
+                                                        <a class="grey2blue" href="{{ url_for('main.delete_survey', survey_id=survey.id) }}">
                                                             <span class="oi oi-trash"></span>删除
                                                         </a>
                                                     </div>
@@ -78,13 +83,14 @@
                                     </div>
                                     <div class="col-md-3" >
                                             <div class="text-left">
-                                                <a style="font-size: 10px">状态：<a style="color: #007bff;font-size: 10px">{{ }}</a></a>
+                                                <a style="font-size: 10px">状态：<a style="color: #007bff;font-size: 10px">{% if survey.is_published %}已{% else %}未{% endif %}发布</a></a>
                                             </div>
                                             <div class="text-left" >
-                                                <a style="font-size: 10px">答卷：<a style="color: #007bff;font-size: 10px">{{ }}</a></a>
+                                                <a style="font-size: 10px">答卷：<a style="color: #007bff;font-size: 10px">{{ survey.participants|length }}</a></a>
                                             </div>
                                             <div class="text-left">
-                                                <a style="font-size: 10px">时间：{{  }}</a>
+{#                                                <a style="font-size: 10px">时间：{{ survey.timestamp.strftime("%Y-%m-%d %H:%M") }}</a>#}
+                                                <a style="font-size: 10px">时间：{{ moment(survey.timestamp).format("Y-M-D HH:MM") }}</a>
                                             </div>
                                     </div>
                                 </div>
@@ -166,7 +172,7 @@
             </div>
         </div>
     </div>
-    {% if photos %}
+    {% if surveys %}
         {{ render_pagination(pagination, align='center') }}
     {% endif %}
 {% else %}
@@ -178,7 +184,7 @@
             <div class="col-md-4 align-self-center">
                 <h1>Vanswer</h1>
                 <p>调查，随时随地.</p>
-                <p><a class="btn btn-primary btn-lg" href="{{ url_for('auth.register') }}">Join Now</a></p>
+                <p><a class="btn btn-primary btn-lg" href="{{ url_for('auth.register') }}">即刻注册</a></p>
             </div>
         </div>
     </div>

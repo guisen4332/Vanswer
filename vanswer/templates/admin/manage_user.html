@@ -6,12 +6,12 @@
 {% block content %}
     <nav aria-label="breadcrumb">
         <ol class="breadcrumb">
-            {{ render_breadcrumb_item('admin.index', 'Dashboard Home') }}
-            {{ render_breadcrumb_item('admin.manage_user', 'Manage User') }}
+            {{ render_breadcrumb_item('admin.index', '控制面板') }}
+            {{ render_breadcrumb_item('admin.manage_user', '用户管理') }}
         </ol>
     </nav>
     <div class="page-header">
-        <h1>Users
+        <h1>用户
             <small class="text-muted">{{ pagination.total }}</small>
         </h1>
         <ul class="nav nav-pills">
@@ -44,26 +44,23 @@
         <table class="table table-striped">
             <thead>
             <tr>
-                <th>Avatars</th>
-                <th>Name/username</th>
-                <th>Role</th>
-                <th>Bio</th>
-                <th>City</th>
-                <th>Date</th>
-                <th>Photos</th>
-                <th>Actions</th>
+                <th>头像</th>
+                <th>用户名</th>
+                <th>角色</th>
+                <th>日期</th>
+                <th>问卷</th>
+                <th>处理</th>
             </tr>
             </thead>
             {% for user in users %}
                 <tr>
                     <td><img src="{{ url_for('main.get_avatar', filename=user.avatar_s) }}"></td>
-                    <td>{{ user.name }}<br>{{ user.username }}</td>
+                    <td>{{ user.username }}</td>
                     <td>{{ user.role.name }}</td>
-                    <td>{{ user.bio }}</td>
-                    <td>{{ user.location }}</td>
                     <td>{{ moment(user.member_since).format('LL') }}</td>
                     <td>
-                        <a href="{{ url_for('user.index', username=user.username) }}">{{ user.photos|length }}</a>
+{#                        href="{{ url_for('user.index', username=user.username) }}"#}
+                        <a>{{ user.surveys|length }}</a>
                     </td>
                     <td>
                     {% if user.role.name not in ['Administrator', 'Moderator'] %}
@@ -71,15 +68,15 @@
                             <form class="inline" action="{{ url_for('admin.unlock_user', user_id=user.id) }}"
                                   method="post">
                                 <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-                                <input type="submit" onclick="return confirm('Are you sure?');"
-                                       class="btn btn-secondary btn-sm" value="Unlock">
+                                <input type="submit" onclick="return confirm('确定?');"
+                                       class="btn btn-secondary btn-sm" value="解锁">
                             </form>
                         {% else %}
                             <form class="inline" action="{{ url_for('admin.lock_user', user_id=user.id) }}"
                                   method="post">
                                 <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-                                <input type="submit" onclick="return confirm('Are you sure?');"
-                                       class="btn btn-warning btn-sm" value="Lock">
+                                <input type="submit" onclick="return confirm('确定?');"
+                                       class="btn btn-warning btn-sm" value="锁定">
                             </form>
                         {% endif %}
                         {% if user.active %}
@@ -87,22 +84,21 @@
                                   method="post">
                                 <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                                 <input type="submit" onclick="return confirm('Are you sure?');"
-                                       class="btn btn-warning btn-sm" value="Block">
+                                       class="btn btn-warning btn-sm" value="屏蔽">
                             </form>
                         {% else %}
                             <form class="inline" action="{{ url_for('admin.unblock_user', user_id=user.id) }}"
                                   method="post">
                                 <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                                 <input type="submit" onclick="return confirm('Are you sure?');"
-                                       class="btn btn-secondary btn-sm" value="Unblock">
+                                       class="btn btn-secondary btn-sm" value="解除屏蔽">
                             </form>
                         {% endif %}
                     {% endif %}
-                        <a class="btn btn-light btn-sm" href="mailto:{{ user.email }}">Email</a>
+                        <a class="btn btn-light btn-sm" href="mailto:{{ user.email }}">邮箱</a>
                         {% if current_user.is_admin %}
                             <a class="btn btn-warning btn-sm"
-                               href="{{ url_for('admin.edit_profile_admin', user_id=user.id) }}">Edit
-                                profile</a>
+                               href="{{ url_for('admin.edit_profile_admin', user_id=user.id) }}">编辑信息</a>
                         {% endif %}
                     </td>
                 </tr>

@@ -1,13 +1,13 @@
 # -*- coding: utf-8 -*-
 """
-    :author: Grey Li (李辉)
-    :url: http://greyli.com
-    :copyright: © 2018 Grey Li <withlihui@gmail.com>
+    :author: 杜桂森
+    :url: https://github.com/guisen18
+    :copyright: © 2019 guisen <duguisen@foxmail.com>
     :license: MIT, see LICENSE for more details.
 """
 from flask_avatars import Avatars
 from flask_bootstrap import Bootstrap
-from flask_dropzone import Dropzone
+# from flask_dropzone import Dropzone
 from flask_login import LoginManager, AnonymousUserMixin
 from flask_mail import Mail
 from flask_moment import Moment
@@ -19,7 +19,7 @@ bootstrap = Bootstrap()
 db = SQLAlchemy()
 login_manager = LoginManager()
 mail = Mail()
-dropzone = Dropzone()
+# dropzone = Dropzone()
 moment = Moment()
 whooshee = Whooshee()
 avatars = Avatars()
@@ -28,7 +28,7 @@ csrf = CSRFProtect()
 
 @login_manager.user_loader
 def load_user(user_id):
-    from albumy.models import User
+    from vanswer.models import User
     user = User.query.get(int(user_id))
     return user
 

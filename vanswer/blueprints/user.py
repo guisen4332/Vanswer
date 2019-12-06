@@ -1,121 +1,137 @@
 # -*- coding: utf-8 -*-
 """
-    :author: Grey Li (李辉)
-    :url: http://greyli.com
-    :copyright: © 2018 Grey Li <withlihui@gmail.com>
+    :author: 杜桂森
+    :url: https://github.com/guisen18
+    :copyright: © 2019 guisen <duguisen@foxmail.com>
     :license: MIT, see LICENSE for more details.
 """
 from flask import render_template, flash, redirect, url_for, current_app, request, Blueprint
 from flask_login import login_required, current_user, fresh_login_required, logout_user
 
-from albumy.decorators import confirm_required, permission_required
-from albumy.emails import send_change_email_email
-from albumy.extensions import db, avatars
-from albumy.forms.user import EditProfileForm, UploadAvatarForm, CropAvatarForm, ChangeEmailForm, \
-    ChangePasswordForm, NotificationSettingForm, PrivacySettingForm, DeleteAccountForm
-from albumy.models import User, Photo, Collect
-from albumy.notifications import push_follow_notification
-from albumy.settings import Operations
-from albumy.utils import generate_token, validate_token, redirect_back, flash_errors
+from vanswer.decorators import confirm_required, permission_required
+from vanswer.emails import send_change_email_email
+from vanswer.extensions import db, avatars
+from vanswer.forms.user import UploadAvatarForm, CropAvatarForm, ChangeEmailForm, \
+    ChangePasswordForm, NotificationSettingForm,  DeleteAccountForm, ChangeEthereumForm
+from vanswer.models import User, Survey, Collect
+from vanswer.settings import Operations
+from vanswer.utils import generate_token, validate_token, redirect_back, flash_errors
 
 user_bp = Blueprint('user', __name__)
 
 
-@user_bp.route('/<username>')
-def index(username):
-    user = User.query.filter_by(username=username).first_or_404()
-    if user == current_user and user.locked:
-        flash('Your account is locked.', 'danger')
-
-    if user == current_user and not user.active:
-        logout_user()
-
-    page = request.args.get('page', 1, type=int)
-    per_page = current_app.config['ALBUMY_PHOTO_PER_PAGE']
-    pagination = Photo.query.with_parent(user).order_by(Photo.timestamp.desc()).paginate(page, per_page)
-    photos = pagination.items
-    return render_template('user/index.html', user=user, pagination=pagination, photos=photos)
-
-
-@user_bp.route('/<username>/collections')
-def show_collections(username):
-    user = User.query.filter_by(username=username).first_or_404()
-    page = request.args.get('page', 1, type=int)
-    per_page = current_app.config['ALBUMY_PHOTO_PER_PAGE']
-    pagination = Collect.query.with_parent(user).order_by(Collect.timestamp.desc()).paginate(page, per_page)
-    collects = pagination.items
-    return render_template('user/collections.html', user=user, pagination=pagination, collects=collects)
+# @user_bp.route('/<username>')
+# def index(username):
+#     user = User.query.filter_by(username=username).first_or_404()
+#     if user == current_user and user.locked:
+#         flash('Your account is locked.', 'danger')
+#
+#     if user == current_user and not user.active:
+#         logout_user()
+#
+#     page = request.args.get('page', 1, type=int)
+#     per_page = current_app.config['VANSWER_PHOTO_PER_PAGE']
+#     pagination = Survey.query.with_parent(user).order_by(Survey.timestamp.desc()).paginate(page, per_page)
+#     photos = pagination.items
+#     return render_template('user/index.html', user=user, pagination=pagination, photos=photos)
 
 
-@user_bp.route('/follow/<username>', methods=['POST'])
-@login_required
-@confirm_required
-@permission_required('FOLLOW')
-def follow(username):
-    user = User.query.filter_by(username=username).first_or_404()
-    if current_user.is_following(user):
-        flash('Already followed.', 'info')
-        return redirect(url_for('.index', username=username))
-
-    current_user.follow(user)
-    flash('User followed.', 'success')
-    if user.receive_follow_notification:
-        push_follow_notification(follower=current_user, receiver=user)
-    return redirect_back()
+# @user_bp.route('/<username>/collections')
+# def show_collections(username):
+#     user = User.query.filter_by(username=username).first_or_404()
+#     page = request.args.get('page', 1, type=int)
+#     per_page = current_app.config['VANSWER_PHOTO_PER_PAGE']
+#     pagination = Collect.query.with_parent(user).order_by(Collect.timestamp.desc()).paginate(page, per_page)
+#     collects = pagination.items
+#     return render_template('user/collections.html', user=user, pagination=pagination, collects=collects)
 
 
-@user_bp.route('/unfollow/<username>', methods=['POST'])
-@login_required
-def unfollow(username):
-    user = User.query.filter_by(username=username).first_or_404()
-    if not current_user.is_following(user):
-        flash('Not follow yet.', 'info')
-        return redirect(url_for('.index', username=username))
-
-    current_user.unfollow(user)
-    flash('User unfollowed.', 'info')
-    return redirect_back()
-
-
-@user_bp.route('/<username>/followers')
-def show_followers(username):
-    user = User.query.filter_by(username=username).first_or_404()
-    page = request.args.get('page', 1, type=int)
-    per_page = current_app.config['ALBUMY_USER_PER_PAGE']
-    pagination = user.followers.paginate(page, per_page)
-    follows = pagination.items
-    return render_template('user/followers.html', user=user, pagination=pagination, follows=follows)
+# @user_bp.route('/follow/<username>', methods=['POST'])
+# @login_required
+# @confirm_required
+# @permission_required('FOLLOW')
+# def follow(username):
+#     user = User.query.filter_by(username=username).first_or_404()
+#     if current_user.is_following(user):
+#         flash('Already followed.', 'info')
+#         return redirect(url_for('.index', username=username))
+#
+#     current_user.follow(user)
+#     flash('User followed.', 'success')
+#     if user.receive_follow_notification:
+#         push_follow_notification(follower=current_user, receiver=user)
+#     return redirect_back()
 
 
-@user_bp.route('/<username>/following')
-def show_following(username):
-    user = User.query.filter_by(username=username).first_or_404()
-    page = request.args.get('page', 1, type=int)
-    per_page = current_app.config['ALBUMY_USER_PER_PAGE']
-    pagination = user.following.paginate(page, per_page)
-    follows = pagination.items
-    return render_template('user/following.html', user=user, pagination=pagination, follows=follows)
+# @user_bp.route('/unfollow/<username>', methods=['POST'])
+# @login_required
+# def unfollow(username):
+#     user = User.query.filter_by(username=username).first_or_404()
+#     if not current_user.is_following(user):
+#         flash('Not follow yet.', 'info')
+#         return redirect(url_for('.index', username=username))
+#
+#     current_user.unfollow(user)
+#     flash('User unfollowed.', 'info')
+#     return redirect_back()
+
+
+# @user_bp.route('/<username>/followers')
+# def show_followers(username):
+#     user = User.query.filter_by(username=username).first_or_404()
+#     page = request.args.get('page', 1, type=int)
+#     per_page = current_app.config['VANSWER_USER_PER_PAGE']
+#     pagination = user.followers.paginate(page, per_page)
+#     follows = pagination.items
+#     return render_template('user/followers.html', user=user, pagination=pagination, follows=follows)
+
+
+# @user_bp.route('/<username>/following')
+# def show_following(username):
+#     user = User.query.filter_by(username=username).first_or_404()
+#     page = request.args.get('page', 1, type=int)
+#     per_page = current_app.config['VANSWER_USER_PER_PAGE']
+#     pagination = user.following.paginate(page, per_page)
+#     follows = pagination.items
+#     return render_template('user/following.html', user=user, pagination=pagination, follows=follows)
 
 
 @user_bp.route('/settings/profile', methods=['GET', 'POST'])
 @login_required
-def edit_profile():
-    form = EditProfileForm()
+def profile():
+    user = User.query.get_or_404(current_user.id)
+    return render_template('user/settings/profile.html', user=user)
+    # form = EditProfileForm()
+    # if form.validate_on_submit():
+    #     current_user.name = form.name.data
+    #     current_user.username = form.username.data
+    #     current_user.bio = form.bio.data
+    #     current_user.website = form.website.data
+    #     current_user.location = form.location.data
+    #     db.session.commit()
+    #     flash('Profile updated.', 'success')
+    #     return redirect(url_for('.index', username=current_user.username))
+    # form.name.data = current_user.name
+    # form.username.data = current_user.username
+    # form.bio.data = current_user.bio
+    # form.website.data = current_user.website
+    # form.location.data = current_user.location
+    # return render_template('user/settings/profile.html', form=form)
+
+
+@user_bp.route('/settings/ethereum', methods=['GET', 'POST'])
+@login_required
+def change_ethereum():
+    user = User.query.get_or_404(current_user.id)
+    form = ChangeEthereumForm()
     if form.validate_on_submit():
-        current_user.name = form.name.data
-        current_user.username = form.username.data
-        current_user.bio = form.bio.data
-        current_user.website = form.website.data
-        current_user.location = form.location.data
+        current_user.Ethereum_id = form.Ethereum_id
+        current_user.Ethereum_password = form.Ethereum_password
         db.session.commit()
-        flash('Profile updated.', 'success')
-        return redirect(url_for('.index', username=current_user.username))
-    form.name.data = current_user.name
-    form.username.data = current_user.username
-    form.bio.data = current_user.bio
-    form.website.data = current_user.website
-    form.location.data = current_user.location
-    return render_template('user/settings/edit_profile.html', form=form)
+        flash('以太账户信息更改成功！', 'info')
+        return redirect(url_for('user.profile'))
+    form.Ethereum_id.data = current_user.Ethereum_id
+    return render_template('user/settings/change_ethereum.html', form=form)
 
 
 @user_bp.route('/settings/avatar')
@@ -137,7 +153,7 @@ def upload_avatar():
         filename = avatars.save_avatar(image)
         current_user.avatar_raw = filename
         db.session.commit()
-        flash('Image uploaded, please crop.', 'success')
+        flash('图片已上传, 请截取！', 'success')
     flash_errors(form)
     return redirect(url_for('.change_avatar'))
 
@@ -157,7 +173,7 @@ def crop_avatar():
         current_user.avatar_m = filenames[1]
         current_user.avatar_l = filenames[2]
         db.session.commit()
-        flash('Avatar updated.', 'success')
+        flash('头像更新', 'success')
     flash_errors(form)
     return redirect(url_for('.change_avatar'))
 
@@ -170,10 +186,10 @@ def change_password():
         if current_user.validate_password(form.old_password.data):
             current_user.set_password(form.password.data)
             db.session.commit()
-            flash('Password updated.', 'success')
-            return redirect(url_for('.index', username=current_user.username))
+            flash('密码已更改.', 'success')
+            return redirect(url_for('main.index', username=current_user.username))
         else:
-            flash('Old password is incorrect.', 'warning')
+            flash('旧密码输入错误.', 'warning')
     return render_template('user/settings/change_password.html', form=form)
 
 
@@ -184,8 +200,8 @@ def change_email_request():
     if form.validate_on_submit():
         token = generate_token(user=current_user, operation=Operations.CHANGE_EMAIL, new_email=form.email.data.lower())
         send_change_email_email(to=form.email.data, user=current_user, token=token)
-        flash('Confirm email sent, check your inbox.', 'info')
-        return redirect(url_for('.index', username=current_user.username))
+        flash('确认邮件已发送，请确认.', 'info')
+        return redirect(url_for('main.index', username=current_user.username))
     return render_template('user/settings/change_email.html', form=form)
 
 
@@ -193,10 +209,10 @@ def change_email_request():
 @login_required
 def change_email(token):
     if validate_token(user=current_user, token=token, operation=Operations.CHANGE_EMAIL):
-        flash('Email updated.', 'success')
-        return redirect(url_for('.index', username=current_user.username))
+        flash('邮箱更新.', 'success')
+        return redirect(url_for('main.index', username=current_user.username))
     else:
-        flash('Invalid or expired token.', 'warning')
+        flash('验证信息无效', 'warning')
         return redirect(url_for('.change_email_request'))
 
 
@@ -206,28 +222,28 @@ def notification_setting():
     form = NotificationSettingForm()
     if form.validate_on_submit():
         current_user.receive_collect_notification = form.receive_collect_notification.data
-        current_user.receive_comment_notification = form.receive_comment_notification.data
-        current_user.receive_follow_notification = form.receive_follow_notification.data
+        # current_user.receive_comment_notification = form.receive_comment_notification.data
+        # current_user.receive_follow_notification = form.receive_follow_notification.data
         db.session.commit()
-        flash('Notification settings updated.', 'success')
+        flash('提醒设置更新.', 'success')
         return redirect(url_for('.index', username=current_user.username))
     form.receive_collect_notification.data = current_user.receive_collect_notification
-    form.receive_comment_notification.data = current_user.receive_comment_notification
-    form.receive_follow_notification.data = current_user.receive_follow_notification
+    # form.receive_comment_notification.data = current_user.receive_comment_notification
+    # form.receive_follow_notification.data = current_user.receive_follow_notification
     return render_template('user/settings/edit_notification.html', form=form)
 
 
-@user_bp.route('/settings/privacy', methods=['GET', 'POST'])
-@login_required
-def privacy_setting():
-    form = PrivacySettingForm()
-    if form.validate_on_submit():
-        current_user.public_collections = form.public_collections.data
-        db.session.commit()
-        flash('Privacy settings updated.', 'success')
-        return redirect(url_for('.index', username=current_user.username))
-    form.public_collections.data = current_user.public_collections
-    return render_template('user/settings/edit_privacy.html', form=form)
+# @user_bp.route('/settings/privacy', methods=['GET', 'POST'])
+# @login_required
+# def privacy_setting():
+#     form = PrivacySettingForm()
+#     if form.validate_on_submit():
+#         current_user.public_collections = form.public_collections.data
+#         db.session.commit()
+#         flash('Privacy settings updated.', 'success')
+#         return redirect(url_for('.index', username=current_user.username))
+#     form.public_collections.data = current_user.public_collections
+#     return render_template('user/settings/edit_privacy.html', form=form)
 
 
 @user_bp.route('/settings/account/delete', methods=['GET', 'POST'])
@@ -237,6 +253,6 @@ def delete_account():
     if form.validate_on_submit():
         db.session.delete(current_user._get_current_object())
         db.session.commit()
-        flash('Your are free, goodbye!', 'success')
+        flash('删除账号成功, 再见!', 'success')
         return redirect(url_for('main.index'))
     return render_template('user/settings/delete_account.html', form=form)

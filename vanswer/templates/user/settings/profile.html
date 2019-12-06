@@ -1,0 +1,44 @@
+{% extends 'user/settings/base.html' %}
+{% from 'bootstrap/form.html' import render_form %}
+
+{% block title %}个人信息{% endblock %}
+
+{% block setting_content %}
+    <div class="card w-100 bg-light">
+        <h3 class="card-header">个人信息</h3>
+        <div class="card-body">
+            <div class="container">
+					<div class="row">
+					<div class="col-md-9">
+						<div class="container">
+							<div class="row m-3">
+								<div class="col" style="font-size: larger">
+									<a class="text-muted">账号：</a>{{ user.username }}
+								</div>
+							</div>
+							<div class="row m-3">
+								<div class="col" style="font-size: larger">
+									<a class="text-muted">以太账号：</a>{{ user.Ethereum_id}}
+								</div>
+							</div>
+							<div class="row m-3">
+								<div class="col" style="font-size: larger">
+									<a class="text-muted">以太余额：</a>{{ user.account_balance }}
+								</div>
+							</div>
+							<div class="row m-3">
+								<div class="col" style="font-size: larger">
+									<a class="text-muted">邮箱：</a>{{ user.email }}
+								</div>
+							</div>
+						</div>
+					</div>
+					<div class="col-md-3">
+						<div class="text-center text-muted">我的头像</div>
+						<img class="img-thumbnail" src="{{ url_for('main.get_avatar', filename=current_user.avatar_l) }}" alt="Rounded image">
+					</div>
+					</div>
+				</div>
+        </div>
+    </div>
+{% endblock %}
