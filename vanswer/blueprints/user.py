@@ -125,12 +125,12 @@ def change_ethereum():
     user = User.query.get_or_404(current_user.id)
     form = ChangeEthereumForm()
     if form.validate_on_submit():
-        current_user.Ethereum_id = form.Ethereum_id
+        current_user.Ethereum_account = form.Ethereum_account
         current_user.Ethereum_password = form.Ethereum_password
         db.session.commit()
         flash('以太账户信息更改成功！', 'info')
         return redirect(url_for('user.profile'))
-    form.Ethereum_id.data = current_user.Ethereum_id
+    form.Ethereum_account.data = current_user.Ethereum_account
     return render_template('user/settings/change_ethereum.html', form=form)
 
 

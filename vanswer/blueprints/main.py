@@ -11,11 +11,12 @@ import json
 from flask import render_template, flash, redirect, url_for, current_app, \
     send_from_directory, request, abort, Blueprint, jsonify
 from flask_login import login_required, current_user
+from flask_web3 import current_web3
 from datetime import datetime
 from collections import OrderedDict
 
 from vanswer.decorators import confirm_required, permission_required
-from vanswer.extensions import db
+from vanswer.extensions import db, CustomIpfs
 from vanswer.forms.main import SurveyForm
 from vanswer.models import User, Survey, SurveyQuestion, QuestionOption, Collect, Notification, UserAnswer
 from vanswer.notifications import push_collect_notification
@@ -49,12 +50,11 @@ def explore():
     if current_user.is_authenticated:
         page = request.args.get('page', 1, type=int)
         per_page = current_app.config['VANSWER_SURVEY_PER_PAGE']
-        a = Survey.query.all()
         try:
             pagination = Survey.query.filter(Survey.author_id != current_user.id,
                                              Survey.start_timestamp < datetime.utcnow(),
                                              Survey.end_timestamp > datetime.utcnow(),
-                                             Survey.is_explore_public == True) \
+                                             Survey.is_explore_public is True) \
                 .order_by(Survey.timestamp.desc()) \
                 .paginate(page, per_page)
 
@@ -91,7 +91,7 @@ def search(search_type):
         pagination = Survey.query.filter(Survey.author_id != current_user.id,
                                          Survey.start_timestamp < datetime.utcnow(),
                                          Survey.end_timestamp > datetime.utcnow(),
-                                         Survey.is_explore_public == True)\
+                                         Survey.is_explore_public is True) \
             .whooshee_search(q).paginate(page, per_page)
     surveys = pagination.items
     return render_template('main/' + search_type + '.html', q=q, surveys=surveys, pagination=pagination)
@@ -135,36 +135,9 @@ def read_all_notification():
     return redirect(url_for('.show_notifications'))
 
 
-# @main_bp.route('/uploads/<path:filename>')
-# def get_image(filename):
-#     return send_from_directory(current_app.config['VANSWER_UPLOAD_PATH'], filename)
-
-
 @main_bp.route('/avatars/<path:filename>')
 def get_avatar(filename):
     return send_from_directory(current_app.config['AVATARS_SAVE_PATH'], filename)
-
-
-# @main_bp.route('/upload', methods=['GET', 'POST'])
-# @login_required
-# @confirm_required
-# @permission_required('UPLOAD')
-# def upload():
-#     if request.method == 'POST' and 'file' in request.files:
-#         f = request.files.get('file')
-#         filename = rename_image(f.filename)
-#         f.save(os.path.join(current_app.config['VANSWER_UPLOAD_PATH'], filename))
-#         filename_s = resize_image(f, filename, current_app.config['VANSWER_PHOTO_SIZE']['small'])
-#         filename_m = resize_image(f, filename, current_app.config['VANSWER_PHOTO_SIZE']['medium'])
-#         photo = Photo(
-#             filename=filename,
-#             filename_s=filename_s,
-#             filename_m=filename_m,
-#             author=current_user._get_current_object()
-#         )
-#         db.session.add(photo)
-#         db.session.commit()
-#     return render_template('main/upload.html')
 
 
 @main_bp.route('/survey')
@@ -194,10 +167,17 @@ def change_survey_status(survey_id):
     survey = Survey.query.get_or_404(survey_id)
     if action == 'publish':
         survey.start_timestamp = datetime.utcnow()
+        survey.geth_address, geth_abi = current_web3.publish_survey(current_user.Ethereum_account,
+                                                                    current_user.Ethereum_password,
+                                                                    survey.id, survey.survey_ipfs,
+                                                                    survey.upper_limit_number, survey.reward)
+        survey.geth_abi = str(geth_abi)
         flash('问卷已发布', 'info')
     else:
         survey.start_timestamp = datetime(2099, 1, 1)
-        flash('问卷已停止', 'info')
+        current_web3.end_survey(current_user.Ethereum_account, current_user.Ethereum_password,
+                                survey.geth_address, json.loads(survey.geth_abi))
+        flash('问卷已停止，重新发布会清除原有数据', 'info')
     survey.end_timestamp = datetime(2099, 1, 1)
     db.session.commit()
     return redirect(url_for('.index'))
@@ -237,8 +217,8 @@ def save_survey():
     survey.content = survey_text
     survey.timestamp = datetime.utcnow()
     survey.questions.clear()
+    survey.survey_ipfs = CustomIpfs.save_survey(survey_id, data={'data': survey_text})
     db.session.commit()
-
     order = json.loads(survey_text, object_pairs_hook=OrderedDict)
     survey.title = order['title']
 
@@ -283,8 +263,14 @@ def send_survey(survey_id):
 @confirm_required
 def save_result():
     survey_id = request.args.get('id')
-    order = json.loads(request.get_data().decode("utf-8"), object_pairs_hook=OrderedDict)
+    answer = request.get_data().decode("utf-8")
+    order = json.loads(answer, object_pairs_hook=OrderedDict)
+
+    survey_hash, answer_hash = CustomIpfs.save_answer(current_user.id, {'survey_id': survey_id, 'data': answer})
     survey = Survey.query.get_or_404(survey_id)
+    user_answer = UserAnswer(users=current_user, surveys=survey, answer_ipfs=answer_hash, answer_text=answer)
+    db.session.add(user_answer)
+
     if not survey.is_published:
         flash('问卷未发布或已截止', 'warning')
         return redirect(url_for('.index'))
@@ -306,6 +292,14 @@ def save_result():
                 db.session.commit()
             option.poll += 1
     db.session.commit()
+
+    current_web3.publish_answer(current_user.Ethereum_account, current_user.Ethereum_password,
+                                survey.geth_address, json.loads(survey.geth_abi),
+                                survey_hash, answer_hash)
+    user = User.query.get_or_404(current_user.id)
+    user.account_balance = current_web3.eth.getBalance(user.Ethereum_account) / 1000000000000000000
+    db.session.commmit()
+
     # option = QuestionOption.query.all()
     return 'success'
 
@@ -339,17 +333,20 @@ def set_survey(survey_id):
         flash('问卷发布中, 不能更改设置 ', 'warning')
         return redirect(url_for('.index'))
     if form.validate_on_submit():
-        survey.reward = form.reward.data
-        if survey.reward != 0 and (current_user.Ethereum_id is None or current_user.Ethereum_password is None):
+        survey.reward = form.reward.data * 1000000000000000000
+        survey.upper_limit_number = form.surveynumber.data
+        if survey.reward != 0 and (current_user.Ethereum_account is None or current_user.Ethereum_password is None):
             flash('以太账户设置错误', 'warning')
-            return redirect(url_for('user.user.change_ethereum'))
+            return redirect(url_for('user.change_ethereum'))
+        if survey.reward * survey.upper_limit_number > survey.account_balance:
+            flash('账户余额不足', 'warning')
+            return redirect(url_for('.index'))
         survey.title = form.surveytitle.data
 
         order = json.loads(survey.content, object_pairs_hook=OrderedDict)
         order['title'] = survey.title
         survey.content = json.dumps(order)
 
-        survey.upper_limit_number = form.surveynumber.data
         survey.is_explore_public = form.ispublic.data
         try:
             survey.start_timestamp = datetime.strptime(form.starttime.data, "%Y-%m-%d %H:%M")
@@ -363,7 +360,7 @@ def set_survey(survey_id):
         flash("修改成功！")
 
     form.ispublic.data = survey.is_explore_public
-    form.reward.data = survey.reward
+    form.reward.data = survey.reward / 1000000000000000000
     form.surveytitle.data = survey.title
     form.surveynumber.data = survey.upper_limit_number
     form.starttime.data = survey.start_timestamp.strftime("%Y-%m-%d %H:%M")
@@ -426,46 +423,6 @@ def report_survey(survey_id):
     return redirect_back()
 
 
-# @main_bp.route('/photo/<int:photo_id>')
-# def show_photo(photo_id):
-#     photo = Photo.query.get_or_404(photo_id)
-#     page = request.args.get('page', 1, type=int)
-#     per_page = current_app.config['VANSWER_COMMENT_PER_PAGE']
-#     pagination = Comment.query.with_parent(photo).order_by(Comment.timestamp.asc()).paginate(page, per_page)
-#     comments = pagination.items
-#
-#     comment_form = CommentForm()
-#     description_form = DescriptionForm()
-#     tag_form = TagForm()
-#
-#     description_form.description.data = photo.description
-#     return render_template('main/photo.html', photo=photo, comment_form=comment_form,
-#                            description_form=description_form, tag_form=tag_form,
-#                            pagination=pagination, comments=comments)
-
-
-# @main_bp.route('/photo/n/<int:photo_id>')
-# def photo_next(photo_id):
-#     photo = Photo.query.get_or_404(photo_id)
-#     photo_n = Photo.query.with_parent(photo.author).filter(Photo.id < photo_id).order_by(Photo.id.desc()).first()
-#
-#     if photo_n is None:
-#         flash('This is already the last one.', 'info')
-#         return redirect(url_for('.show_photo', photo_id=photo_id))
-#     return redirect(url_for('.show_photo', photo_id=photo_n.id))
-#
-#
-# @main_bp.route('/photo/p/<int:photo_id>')
-# def photo_previous(photo_id):
-#     photo = Photo.query.get_or_404(photo_id)
-#     photo_p = Photo.query.with_parent(photo.author).filter(Photo.id > photo_id).order_by(Photo.id.asc()).first()
-#
-#     if photo_p is None:
-#         flash('This is already the first one.', 'info')
-#         return redirect(url_for('.show_photo', photo_id=photo_id))
-#     return redirect(url_for('.show_photo', photo_id=photo_p.id))
-
-
 @main_bp.route('/collect/<int:survey_id>', methods=['POST'])
 @login_required
 @confirm_required
@@ -494,166 +451,3 @@ def uncollect(survey_id):
     current_user.uncollect(photo)
     flash('取消收藏.', 'info')
     return redirect_back()
-
-# @main_bp.route('/report/comment/<int:comment_id>', methods=['POST'])
-# @login_required
-# @confirm_required
-# def report_comment(comment_id):
-#     comment = Comment.query.get_or_404(comment_id)
-#     comment.flag += 1
-#     db.session.commit()
-#     flash('Comment reported.', 'success')
-#     return redirect(url_for('.show_photo', photo_id=comment.photo_id))
-
-
-# @main_bp.route('/photo/<int:photo_id>/collectors')
-# def show_collectors(photo_id):
-#     photo = Photo.query.get_or_404(photo_id)
-#     page = request.args.get('page', 1, type=int)
-#     per_page = current_app.config['VANSWER_USER_PER_PAGE']
-#     pagination = Collect.query.with_parent(photo).order_by(Collect.timestamp.asc()).paginate(page, per_page)
-#     collects = pagination.items
-#     return render_template('main/collectors.html', collects=collects, photo=photo, pagination=pagination)
-
-
-# @main_bp.route('/photo/<int:photo_id>/description', methods=['POST'])
-# @login_required
-# def edit_description(photo_id):
-#     photo = Photo.query.get_or_404(photo_id)
-#     if current_user != photo.author and not current_user.can('MODERATE'):
-#         abort(403)
-#
-#     form = DescriptionForm()
-#     if form.validate_on_submit():
-#         photo.description = form.description.data
-#         db.session.commit()
-#         flash('Description updated.', 'success')
-#
-#     flash_errors(form)
-#     return redirect(url_for('.show_photo', photo_id=photo_id))
-
-
-# @main_bp.route('/photo/<int:photo_id>/comment/new', methods=['POST'])
-# @login_required
-# @permission_required('COMMENT')
-# def new_comment(photo_id):
-#     photo = Photo.query.get_or_404(photo_id)
-#     page = request.args.get('page', 1, type=int)
-#     form = CommentForm()
-#     if form.validate_on_submit():
-#         body = form.body.data
-#         author = current_user._get_current_object()
-#         comment = Comment(body=body, author=author, photo=photo)
-#
-#         replied_id = request.args.get('reply')
-#         if replied_id:
-#             comment.replied = Comment.query.get_or_404(replied_id)
-#             if comment.replied.author.receive_comment_notification:
-#                 push_comment_notification(photo_id=photo.id, receiver=comment.replied.author)
-#         db.session.add(comment)
-#         db.session.commit()
-#         flash('Comment published.', 'success')
-#
-#         if current_user != photo.author and photo.author.receive_comment_notification:
-#             push_comment_notification(photo_id, receiver=photo.author, page=page)
-#
-#     flash_errors(form)
-#     return redirect(url_for('.show_photo', photo_id=photo_id, page=page))
-
-
-# @main_bp.route('/photo/<int:photo_id>/tag/new', methods=['POST'])
-# @login_required
-# def new_tag(photo_id):
-#     photo = Photo.query.get_or_404(photo_id)
-#     if current_user != photo.author and not current_user.can('MODERATE'):
-#         abort(403)
-#
-#     form = TagForm()
-#     if form.validate_on_submit():
-#         for name in form.tag.data.split():
-#             tag = Tag.query.filter_by(name=name).first()
-#             if tag is None:
-#                 tag = Tag(name=name)
-#                 db.session.add(tag)
-#                 db.session.commit()
-#             if tag not in photo.tags:
-#                 photo.tags.append(tag)
-#                 db.session.commit()
-#         flash('Tag added.', 'success')
-#
-#     flash_errors(form)
-#     return redirect(url_for('.show_photo', photo_id=photo_id))
-
-
-# @main_bp.route('/set-comment/<int:photo_id>', methods=['POST'])
-# @login_required
-# def set_comment(photo_id):
-#     photo = Photo.query.get_or_404(photo_id)
-#     if current_user != photo.author:
-#         abort(403)
-#
-#     if photo.can_comment:
-#         photo.can_comment = False
-#         flash('Comment disabled', 'info')
-#     else:
-#         photo.can_comment = True
-#         flash('Comment enabled.', 'info')
-#     db.session.commit()
-#     return redirect(url_for('.show_photo', photo_id=photo_id))
-
-
-# @main_bp.route('/reply/comment/<int:comment_id>')
-# @login_required
-# @permission_required('COMMENT')
-# def reply_comment(comment_id):
-#     comment = Comment.query.get_or_404(comment_id)
-#     return redirect(
-#         url_for('.show_photo', photo_id=comment.photo_id, reply=comment_id,
-#                 author=comment.author.name) + '#comment-form')
-
-
-# @main_bp.route('/delete/comment/<int:comment_id>', methods=['POST'])
-# @login_required
-# def delete_comment(comment_id):
-#     comment = Comment.query.get_or_404(comment_id)
-#     if current_user != comment.author and current_user != comment.photo.author \
-#             and not current_user.can('MODERATE'):
-#         abort(403)
-#     db.session.delete(comment)
-#     db.session.commit()
-#     flash('Comment deleted.', 'info')
-#     return redirect(url_for('.show_photo', photo_id=comment.photo_id))
-
-
-# @main_bp.route('/tag/<int:tag_id>', defaults={'order': 'by_time'})
-# @main_bp.route('/tag/<int:tag_id>/<order>')
-# def show_tag(tag_id, order):
-#     tag = Tag.query.get_or_404(tag_id)
-#     page = request.args.get('page', 1, type=int)
-#     per_page = current_app.config['VANSWER_PHOTO_PER_PAGE']
-#     order_rule = 'time'
-#     pagination = Photo.query.with_parent(tag).order_by(Photo.timestamp.desc()).paginate(page, per_page)
-#     photos = pagination.items
-#
-#     if order == 'by_collects':
-#         photos.sort(key=lambda x: len(x.collectors), reverse=True)
-#         order_rule = 'collects'
-#     return render_template('main/tag.html', tag=tag, pagination=pagination, photos=photos, order_rule=order_rule)
-
-
-# @main_bp.route('/delete/tag/<int:photo_id>/<int:tag_id>', methods=['POST'])
-# @login_required
-# def delete_tag(photo_id, tag_id):
-#     tag = Tag.query.get_or_404(tag_id)
-#     photo = Photo.query.get_or_404(photo_id)
-#     if current_user != photo.author and not current_user.can('MODERATE'):
-#         abort(403)
-#     photo.tags.remove(tag)
-#     db.session.commit()
-#
-#     if not tag.photos:
-#         db.session.delete(tag)
-#         db.session.commit()
-#
-#     flash('Tag deleted.', 'info')
-#     return redirect(url_for('.show_photo', photo_id=photo_id))

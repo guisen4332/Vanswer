@@ -40,6 +40,12 @@ class BaseConfig:
         VANSWER_PHOTO_SIZE['medium']: '_m',  # display
     }
 
+    ROOT_GETH_ACCOUNT = os.getenv('ROOT_GETH_ACCOUNT')
+    ROOT_GETH_PASSWORD = os.getenv('ROOT_GETH_PASSWORD')
+    USER_GETH_PASSWORD = os.getenv('USER_GETH_PASSWORD')
+
+    VHUB_HOST = os.getenv('VHUB_HOST')
+
     SECRET_KEY = os.getenv('SECRET_KEY', 'secret string')
     MAX_CONTENT_LENGTH = 3 * 1024 * 1024  # file size exceed to 3 Mb will return a 413 error response.
 
@@ -58,6 +64,7 @@ class BaseConfig:
     MAIL_USERNAME = os.getenv('MAIL_USERNAME')
     MAIL_PASSWORD = os.getenv('MAIL_PASSWORD')
     MAIL_DEFAULT_SENDER = 'robot@vanswer.com'
+
 
     DROPZONE_ALLOWED_FILE_TYPE = 'image'
     DROPZONE_MAX_FILE_SIZE = 3

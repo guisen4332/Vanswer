@@ -12,12 +12,13 @@ from flask import Flask, render_template
 from flask_login import current_user
 from flask_wtf.csrf import CSRFError
 
+
 from vanswer.blueprints.admin import admin_bp
 from vanswer.blueprints.ajax import ajax_bp
 from vanswer.blueprints.auth import auth_bp
 from vanswer.blueprints.main import main_bp
 from vanswer.blueprints.user import user_bp
-from vanswer.extensions import bootstrap, db, login_manager, mail, moment, whooshee, avatars, csrf
+from vanswer.extensions import bootstrap, db, login_manager, mail, moment, whooshee, avatars, csrf, CustomFlaskWeb3
 from vanswer.models import Role, User, Notification, Collect, Permission, Survey, SurveyQuestion, QuestionOption
 from vanswer.settings import config
 
@@ -29,6 +30,10 @@ def create_app(config_name=None):
     app = Flask('vanswer')
     
     app.config.from_object(config[config_name])
+    app.config.update({'ETHEREUM_PROVIDER': os.getenv('ETHEREUM_PROVIDER', 'http'),
+                       'ETHEREUM_ENDPOINT_URI': os.getenv('ETHEREUM_ENDPOINT_URI', 'http://localhost:8545')})
+
+    web3 = CustomFlaskWeb3(app=app)
 
     register_extensions(app)
     register_blueprints(app)
@@ -133,7 +138,7 @@ def register_commands(app):
     def forge(user, survey_count, collect):
         """Generate fake data."""
 
-        from vanswer.fakes import fake_admin, fake_comment, fake_follow, fake_tag, fake_user, fake_collect, fake_survey
+        from vanswer.fakes import fake_admin, fake_follow, fake_user, fake_collect, fake_survey
 
         db.drop_all()
         db.create_all()

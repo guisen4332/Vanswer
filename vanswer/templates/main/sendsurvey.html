@@ -22,7 +22,8 @@
                         <div id="qrcode" align="center"></div>
                     </div>
                     <div class="card-footer">
-                        <h5 class="text-center"><a href="{{ url_for('main.fill_in_survey', survey_id=survey_id, _external=True) }}">{{ url_for('main.fill_in_survey', survey_id=survey_id, _external=True) }}</a></h5>
+{#                        <h5 class="text-center"><a href="{{ url_for('main.fill_in_survey', survey_id=survey_id, _external=True) }}">{{ url_for('main.fill_in_survey', survey_id=survey_id, _external=True) }}</a></h5>#}
+                        <h5 class="text-center">{{ "http://120.79.183.249" + url_for('main.fill_in_survey', survey_id=survey_id) }}</h5>
                     </div>
                 </div>
             </div>
@@ -35,6 +36,7 @@
     {{ super() }}
     <script src="{{ url_for('static', filename='js/qrcode.min.js') }}"></script>
     <script type="text/javascript">
-        new QRCode(document.getElementById("qrcode"), "{{ url_for('main.fill_in_survey', survey_id=survey_id, _external=True) }}");
+        {#new QRCode(document.getElementById("qrcode"), "{{ url_for('main.fill_in_survey', survey_id=survey_id, _external=True) }}");#}
+        new QRCode(document.getElementById("qrcode"), "{{ "http://120.79.183.249" + url_for('main.fill_in_survey', survey_id=survey_id) }}");
     </script>
 {% endblock %}

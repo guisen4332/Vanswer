@@ -45,12 +45,12 @@ def edit_profile_admin(user_id):
         user.confirmed = form.confirmed.data
         user.active = form.active.data
         user.username = form.username.data
-        user.Ethereum_id = form.Ethereum_id.data
+        user.Ethereum_account = form.Ethereum_account.data
         user.email = form.email.data
         db.session.commit()
         flash('个人信息更新.', 'success')
         return redirect_back()
-    form.Ethereum_id.data = user.Ethereum_id
+    form.Ethereum_account.data = user.Ethereum_account
     form.role.data = user.role_id
     form.username.data = user.username
     form.email.data = user.email

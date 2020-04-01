@@ -27,7 +27,7 @@ from vanswer.models import User
 
 
 class ChangeEthereumForm(FlaskForm):
-    Ethereum_id = StringField('以太账户', validators=[DataRequired(), Length(1, 100)])
+    Ethereum_account = StringField('以太账户', validators=[DataRequired(), Length(1, 100)])
     Ethereum_password = PasswordField('新密码', validators=[
         DataRequired(), Length(8, 128), EqualTo('Ethereum_password2')])
     Ethereum_password2 = PasswordField('确认密码', validators=[DataRequired()])

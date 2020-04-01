@@ -18,9 +18,9 @@ class EditProfileAdminForm(FlaskForm):
     username = StringField('用户名', validators=[DataRequired(), Length(1, 20),
                                                    Regexp('^[a-zA-Z0-9]*$',
                                                           message='用户名需仅有 a-z, A-Z 或 0-9.')])
-    Ethereum_id = StringField('以太账号', validators=[Length(0, 20), Regexp('^[a-zA-Z0-9]*$',
+    Ethereum_account = StringField('以太账号', validators=[Length(0, 20), Regexp('^[a-zA-Z0-9]*$',
                                                                         message='用户名需仅有 a-z, A-Z 或 0-9.')])
-    # Ethereum_id = StringField('以太账号', validators=[DataRequired(), Length(1, 20),
+    # Ethereum_account = StringField('以太账号', validators=[DataRequired(), Length(1, 20),
     #                                                Regexp('^[a-zA-Z0-9]*$',
     #                                                       message='用户名需仅有 a-z, A-Z 或 0-9.')])
 
