@@ -43,6 +43,11 @@ class BaseConfig:
     ROOT_GETH_ACCOUNT = os.getenv('ROOT_GETH_ACCOUNT')
     ROOT_GETH_PASSWORD = os.getenv('ROOT_GETH_PASSWORD')
     USER_GETH_PASSWORD = os.getenv('USER_GETH_PASSWORD')
+    USER_GETH_BALANCE = os.getenv('USER_GETH_BALANCE')
+    RECEIPT_TIMEOUT = os.getenv('RECEIPT_TIMEOUT')
+    TRANSACTION_GAS = os.getenv('TRANSACTION_GAS')
+    SURVEY_ABI = os.getenv('SURVEY_ABI')
+    SURVEY_BIN = os.getenv('SURVEY_BIN')
 
     VHUB_HOST = os.getenv('VHUB_HOST')
 
