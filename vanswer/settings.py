@@ -43,9 +43,9 @@ class BaseConfig:
     ROOT_GETH_ACCOUNT = os.getenv('ROOT_GETH_ACCOUNT')
     ROOT_GETH_PASSWORD = os.getenv('ROOT_GETH_PASSWORD')
     USER_GETH_PASSWORD = os.getenv('USER_GETH_PASSWORD')
-    USER_GETH_BALANCE = os.getenv('USER_GETH_BALANCE')
-    RECEIPT_TIMEOUT = os.getenv('RECEIPT_TIMEOUT')
-    TRANSACTION_GAS = os.getenv('TRANSACTION_GAS')
+    USER_GETH_BALANCE = int(os.getenv('USER_GETH_BALANCE'))
+    RECEIPT_TIMEOUT = int(os.getenv('RECEIPT_TIMEOUT'))
+    TRANSACTION_GAS = int(os.getenv('TRANSACTION_GAS'))
     SURVEY_ABI = os.getenv('SURVEY_ABI')
     SURVEY_BIN = os.getenv('SURVEY_BIN')
 

@@ -8,34 +8,57 @@
 import os
 
 import click
+import logging
+from celery import Celery
 from flask import Flask, render_template
 from flask_login import current_user
 from flask_wtf.csrf import CSRFError
-
+from logging.handlers import RotatingFileHandler
 
 from vanswer.blueprints.admin import admin_bp
 from vanswer.blueprints.ajax import ajax_bp
 from vanswer.blueprints.auth import auth_bp
 from vanswer.blueprints.main import main_bp
 from vanswer.blueprints.user import user_bp
-from vanswer.extensions import bootstrap, db, login_manager, mail, moment, whooshee, avatars, csrf, CustomFlaskWeb3
-from vanswer.models import Role, User, Notification, Collect, Permission, Survey, SurveyQuestion, QuestionOption
+from vanswer.extensions import bootstrap, db, login_manager, mail,\
+    moment, whooshee, avatars, csrf, CustomFlaskWeb3
+from vanswer.models import Role, User, Notification, Collect,\
+    Permission, Survey, SurveyQuestion, QuestionOption
 from vanswer.settings import config
+
+celery = Celery(
+        __name__,
+        backend=os.getenv('CELERY_RESULT_BACKEND'),
+        broker=os.getenv('CELERY_BROKER_URL')
+    )
 
 
 def create_app(config_name=None):
     if config_name is None:
         config_name = os.getenv('FLASK_CONFIG', 'development')
 
-    app = Flask('vanswer')
+    app = Flask(__name__)
     
     app.config.from_object(config[config_name])
     app.config.update({'ETHEREUM_PROVIDER': os.getenv('ETHEREUM_PROVIDER', 'http'),
-                       'ETHEREUM_ENDPOINT_URI': os.getenv('ETHEREUM_ENDPOINT_URI', 'http://localhost:8545')})
+                       'ETHEREUM_ENDPOINT_URI': os.getenv('ETHEREUM_ENDPOINT_URI', 'http://localhost:8545'),
+                       'ETHEREUM_OPTS': {'timeout': 60},
+                       # 'ETHEREUM_IPC_PATH': os.getenv('ETHEREUM_IPC_PATH', None),
+                       'CELERY_BROKER_URL': os.getenv('CELERY_BROKER_URL'),
+                       'CELERY_RESULT_BACKEND': os.getenv('CELERY_RESULT_BACKEND')})
 
     web3 = CustomFlaskWeb3(app=app)
 
+    celery.conf.update(app.config)
+
+    class ContextTask(celery.Task):
+        def __call__(self, *args, **kwargs):
+            with app.app_context():
+                return self.run(*args, **kwargs)
+    celery.Task = ContextTask
+
     register_extensions(app)
+    register_logger(app)
     register_blueprints(app)
     register_commands(app)
     register_errorhandlers(app)
@@ -54,6 +77,16 @@ def register_extensions(app):
     whooshee.init_app(app)
     avatars.init_app(app)
     csrf.init_app(app)
+
+
+def register_logger(app):
+    app.logger.setLevel(logging.INFO)
+    formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
+    file_handler = RotatingFileHandler(os.getenv('LOG_PATH'), maxBytes=10 * 1024 * 1024, backupCount=10)
+    file_handler.setFormatter(formatter)
+    file_handler.setLevel(logging.INFO)
+    if not app.debug:
+        app.logger.addHandler(file_handler)
 
 
 def register_blueprints(app):

@@ -7,14 +7,15 @@
 """
 import json
 import requests
+from . import celery, Notification
 from flask import current_app
 from flask_avatars import Avatars
 from flask_bootstrap import Bootstrap
-from flask_login import LoginManager, AnonymousUserMixin
+from flask_login import current_user, LoginManager, AnonymousUserMixin
 from flask_mail import Mail
 from flask_moment import Moment
 from flask_sqlalchemy import SQLAlchemy
-from flask_web3 import FlaskWeb3
+from flask_web3 import current_web3, FlaskWeb3
 from flask_whooshee import Whooshee
 from flask_wtf import CSRFProtect
 from web3 import Web3
@@ -136,22 +137,61 @@ class CustomWeb3(Web3):
         :param balance:  the balance of the new account (transfer from the root)
         :return: the account's address
         """
-        try:
-            new_account = self.geth.personal.newAccount(password)
-            new_account = new_account.hex()
-        except AttributeError as e:
-            print(e)
+        new_account = self.geth.personal.newAccount(password)
         self.transfer(current_app.config['ROOT_GETH_ACCOUNT'],
                       current_app.config['ROOT_GETH_PASSWORD'],
                       new_account,
                       balance)
         return new_account
 
-    # def get_balance(self, address):
-    #     """
-    #     address could be either the account or the contract address
-    #     """
-    #     return self.eth.getBalance(address)
+
+@celery.task
+def save_result_web3(survey, survey_hash, answer_hash):
+    try:
+        current_web3.publish_answer(current_user.Ethereum_account, current_user.Ethereum_password,
+                                    survey.geth_address, json.loads(survey.geth_abi),
+                                    survey_hash, answer_hash)
+        current_user.account_balance = current_web3.eth.getBalance(current_user.Ethereum_account) / 1000000000000000000
+        notification = Notification(message='Succeed in saving answer to ethereum', receiver=current_user)
+        db.session.add(notification)
+    except Exception as e:
+        current_app.logger.error(e)
+        notification = Notification(message='Failed to save answer to ethereum', receiver=current_user)
+        db.session.add(notification)
+    db.session.commmit()
+
+
+@celery.task
+def publish_survey_web3(survey):
+    try:
+        survey.geth_address, geth_abi = current_web3.publish_survey(current_user.Ethereum_account,
+                                                                    current_user.Ethereum_password,
+                                                                    survey.id, survey.survey_ipfs,
+                                                                    survey.upper_limit_number, survey.reward)
+        survey.geth_abi = json.dumps(geth_abi)
+        current_user.account_balance = current_web3.eth.getBalance(current_user.Ethereum_account) / 1000000000000000000
+        notification = Notification(message='Succeed in publishing survey to ethereum', receiver=current_user)
+        db.session.add(notification)
+    except Exception as e:
+        current_app.logger.error(e)
+        notification = Notification(message='Failed to publish survey to ethereum', receiver=current_user)
+        db.session.add(notification)
+    db.session.commit()
+
+
+@celery.task
+def end_survey_web3(survey):
+    try:
+        current_web3.end_survey(current_user.Ethereum_account, current_user.Ethereum_password,
+                                survey.geth_address, json.loads(survey.geth_abi))
+        current_user.account_balance = current_web3.eth.getBalance(current_user.Ethereum_account) / 1000000000000000000
+        notification = Notification(message='Succeeding in ending survey in ethereum', receiver=current_user)
+        db.session.add(notification)
+    except Exception as e:
+        current_app.logger.error(e)
+        notification = Notification(message='Failed to end survey in ethereum', receiver=current_user)
+        db.session.add(notification)
+    db.session.commit()
 
 
 class CustomFlaskWeb3(FlaskWeb3):
@@ -170,7 +210,7 @@ class CustomIpfs(object):
         if data is None:
             from vanswer.models import Survey
             data = {'data': Survey.query.filter_by(id=id).first().content}
-        r = requests.post(url, data=json.loads(data))
+        r = requests.post(url, data=data)
         return r.json()['survey_hash']
 
     @staticmethod

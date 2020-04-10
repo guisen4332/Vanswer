@@ -49,10 +49,11 @@ def fake_user(count=10):
                     account_balance=current_web3.eth.getBalance(account))
         user.set_password('123456')
         db.session.add(user)
-        try:
-            db.session.commit()
-        except IntegrityError:
-            db.session.rollback()
+        print('add user')
+    try:
+        db.session.commit()
+    except IntegrityError:
+        db.session.rollback()
 
 
 def fake_follow(count=30):
@@ -148,7 +149,8 @@ def fake_survey(survey_count=20):
             id=str(survey.id), ipfs=survey.survey_ipfs,
             limit=5, reward=1)
         # geth_abi is a list
-        survey.geth_abi = str(geth_abi)
+        survey.geth_abi = json.dumps(geth_abi)
+        print('add survey')
     db.session.commit()
 
 

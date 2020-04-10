@@ -5,18 +5,17 @@
     :copyright: © 2019 guisen <duguisen@foxmail.com>
     :license: MIT, see LICENSE for more details.
 """
-import os
 import json
-
+import importlib
+from collections import OrderedDict
+from datetime import datetime
 from flask import render_template, flash, redirect, url_for, current_app, \
     send_from_directory, request, abort, Blueprint, jsonify
 from flask_login import login_required, current_user
 from flask_web3 import current_web3
-from datetime import datetime
-from collections import OrderedDict
 
 from vanswer.decorators import confirm_required, permission_required
-from vanswer.extensions import db, CustomIpfs
+from vanswer.extensions import db, CustomIpfs, publish_survey_web3, end_survey_web3, save_result_web3
 from vanswer.forms.main import SurveyForm
 from vanswer.models import User, Survey, SurveyQuestion, QuestionOption, Collect, Notification, UserAnswer
 from vanswer.notifications import push_collect_notification
@@ -54,7 +53,7 @@ def explore():
             pagination = Survey.query.filter(Survey.author_id != current_user.id,
                                              Survey.start_timestamp < datetime.utcnow(),
                                              Survey.end_timestamp > datetime.utcnow(),
-                                             Survey.is_explore_public is True) \
+                                             Survey.is_explore_public == True) \
                 .order_by(Survey.timestamp.desc()) \
                 .paginate(page, per_page)
 
@@ -167,16 +166,23 @@ def change_survey_status(survey_id):
     survey = Survey.query.get_or_404(survey_id)
     if action == 'publish':
         survey.start_timestamp = datetime.utcnow()
-        survey.geth_address, geth_abi = current_web3.publish_survey(current_user.Ethereum_account,
-                                                                    current_user.Ethereum_password,
-                                                                    survey.id, survey.survey_ipfs,
-                                                                    survey.upper_limit_number, survey.reward)
-        survey.geth_abi = str(geth_abi)
+        task = publish_survey_web3.deplay(survey)
+        current_app.logger.info('publish survey ' + survey.id + ' ' 
+                                'task.id: ' + task.id)
+        # survey.geth_address, geth_abi = current_web3.publish_survey(current_user.Ethereum_account,
+        #                                                             current_user.Ethereum_password,
+        #                                                             survey.id, survey.survey_ipfs,
+        #                                                             survey.upper_limit_number, survey.reward)
+        # survey.geth_abi = str(geth_abi)
         flash('问卷已发布', 'info')
     else:
         survey.start_timestamp = datetime(2099, 1, 1)
-        current_web3.end_survey(current_user.Ethereum_account, current_user.Ethereum_password,
-                                survey.geth_address, json.loads(survey.geth_abi))
+        task = end_survey_web3.deplay(survey)
+        current_app.logger.info('end survey ' + survey.id + ' ' 
+                                'task.id: ' + task.id)
+
+        # current_web3.end_survey(current_user.Ethereum_account, current_user.Ethereum_password,
+        #                         survey.geth_address, json.loads(survey.geth_abi))
         flash('问卷已停止，重新发布会清除原有数据', 'info')
     survey.end_timestamp = datetime(2099, 1, 1)
     db.session.commit()
@@ -293,12 +299,17 @@ def save_result():
             option.poll += 1
     db.session.commit()
 
-    current_web3.publish_answer(current_user.Ethereum_account, current_user.Ethereum_password,
-                                survey.geth_address, json.loads(survey.geth_abi),
-                                survey_hash, answer_hash)
-    user = User.query.get_or_404(current_user.id)
-    user.account_balance = current_web3.eth.getBalance(user.Ethereum_account) / 1000000000000000000
-    db.session.commmit()
+    task = save_result_web3.deplay(survey, survey_hash, answer_hash)
+    current_app.logger.info('publish answer' +
+                            'survey_id: ' + survey.id + ' ' +
+                            'user_id: ' + current_user.id + ' ' +
+                            'task.id: ' + task.id)
+    # current_web3.publish_answer(current_user.Ethereum_account, current_user.Ethereum_password,
+    #                             survey.geth_address, json.loads(survey.geth_abi),
+    #                             survey_hash, answer_hash)
+    # user = User.query.get_or_404(current_user.id)
+    # user.account_balance = current_web3.eth.getBalance(user.Ethereum_account) / 1000000000000000000
+    # db.session.commmit()
 
     # option = QuestionOption.query.all()
     return 'success'
@@ -451,3 +462,39 @@ def uncollect(survey_id):
     current_user.uncollect(photo)
     flash('取消收藏.', 'info')
     return redirect_back()
+
+
+@main_bp.route('/task_status/', )
+def task_status():
+    task_name = request.args.get('name')
+    task_id = request.args.get('id')
+
+    imp_module = importlib.import_module(__name__)
+    task = getattr(imp_module, task_name).AsyncResult(task_id)
+
+    if task.state == 'PENDING':
+        # job did not start yet
+        response = {
+            'state': task.state,
+            'current': 0,
+            'total': 1,
+            'status': 'Pending...'
+        }
+    elif task.state != 'FAILURE':
+        response = {
+            'state': task.state,
+            'current': task.info.get('current', 0),
+            'total': task.info.get('total', 1),
+            'status': task.info.get('status', '')
+        }
+        if 'result' in task.info:
+            response['result'] = task.info['result']
+    else:
+        # something went wrong in the background job
+        response = {
+            'state': task.state,
+            'current': 1,
+            'total': 1,
+            'status': str(task.info),  # this is the exception raised
+        }
+    return jsonify(response)
