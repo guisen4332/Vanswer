@@ -6,8 +6,9 @@
     :license: MIT, see LICENSE for more details.
 """
 import json
+import os
 import requests
-from . import celery, Notification
+from celery import Celery
 from flask import current_app
 from flask_avatars import Avatars
 from flask_bootstrap import Bootstrap
@@ -28,6 +29,11 @@ moment = Moment()
 whooshee = Whooshee()
 avatars = Avatars()
 csrf = CSRFProtect()
+celery = Celery(
+        __name__,
+        backend=os.getenv('CELERY_RESULT_BACKEND'),
+        broker=os.getenv('CELERY_BROKER_URL')
+    )
 
 
 @login_manager.user_loader
@@ -147,6 +153,7 @@ class CustomWeb3(Web3):
 
 @celery.task
 def save_result_web3(survey, survey_hash, answer_hash):
+    from vanswer.models import Notification
     try:
         current_web3.publish_answer(current_user.Ethereum_account, current_user.Ethereum_password,
                                     survey.geth_address, json.loads(survey.geth_abi),
@@ -163,6 +170,7 @@ def save_result_web3(survey, survey_hash, answer_hash):
 
 @celery.task
 def publish_survey_web3(survey):
+    from vanswer.models import Notification
     try:
         survey.geth_address, geth_abi = current_web3.publish_survey(current_user.Ethereum_account,
                                                                     current_user.Ethereum_password,
@@ -181,6 +189,7 @@ def publish_survey_web3(survey):
 
 @celery.task
 def end_survey_web3(survey):
+    from vanswer.models import Notification
     try:
         current_web3.end_survey(current_user.Ethereum_account, current_user.Ethereum_password,
                                 survey.geth_address, json.loads(survey.geth_abi))

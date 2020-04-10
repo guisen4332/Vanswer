@@ -9,7 +9,6 @@ import os
 
 import click
 import logging
-from celery import Celery
 from flask import Flask, render_template
 from flask_login import current_user
 from flask_wtf.csrf import CSRFError
@@ -21,16 +20,10 @@ from vanswer.blueprints.auth import auth_bp
 from vanswer.blueprints.main import main_bp
 from vanswer.blueprints.user import user_bp
 from vanswer.extensions import bootstrap, db, login_manager, mail,\
-    moment, whooshee, avatars, csrf, CustomFlaskWeb3
+    moment, whooshee, avatars, csrf, CustomFlaskWeb3, celery
 from vanswer.models import Role, User, Notification, Collect,\
     Permission, Survey, SurveyQuestion, QuestionOption
 from vanswer.settings import config
-
-celery = Celery(
-        __name__,
-        backend=os.getenv('CELERY_RESULT_BACKEND'),
-        broker=os.getenv('CELERY_BROKER_URL')
-    )
 
 
 def create_app(config_name=None):
@@ -80,6 +73,12 @@ def register_extensions(app):
 
 
 def register_logger(app):
+    p, f = os.path.split(os.getenv('LOG_PATH'))
+    if not os.path.isdir(p):  # 无文件夹时创建
+        os.makedirs(p)
+    if not os.path.isfile(f):  # 无文件时创建
+        fd = open(f, mode="w", encoding="utf-8")
+        fd.close()
     app.logger.setLevel(logging.INFO)
     formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
     file_handler = RotatingFileHandler(os.getenv('LOG_PATH'), maxBytes=10 * 1024 * 1024, backupCount=10)
