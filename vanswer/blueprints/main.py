@@ -166,9 +166,9 @@ def change_survey_status(survey_id):
     survey = Survey.query.get_or_404(survey_id)
     if action == 'publish':
         survey.start_timestamp = datetime.utcnow()
-        task = publish_survey_web3.deplay(survey)
-        current_app.logger.info('publish survey ' + survey.id + ' ' 
-                                'task.id: ' + task.id)
+        task = publish_survey_web3.delay(survey_id)
+        current_app.logger.info('publish survey ' + str(survey.id) + ' ' 
+                                'task.id: ' + str(task.id))
         # survey.geth_address, geth_abi = current_web3.publish_survey(current_user.Ethereum_account,
         #                                                             current_user.Ethereum_password,
         #                                                             survey.id, survey.survey_ipfs,
@@ -177,9 +177,9 @@ def change_survey_status(survey_id):
         flash('问卷已发布', 'info')
     else:
         survey.start_timestamp = datetime(2099, 1, 1)
-        task = end_survey_web3.deplay(survey)
-        current_app.logger.info('end survey ' + survey.id + ' ' 
-                                'task.id: ' + task.id)
+        task = end_survey_web3.delay(survey_id)
+        current_app.logger.info('end survey ' + str(survey.id) + ' ' 
+                                'task.id: ' + str(task.id))
 
         # current_web3.end_survey(current_user.Ethereum_account, current_user.Ethereum_password,
         #                         survey.geth_address, json.loads(survey.geth_abi))
@@ -274,13 +274,18 @@ def save_result():
 
     survey_hash, answer_hash = CustomIpfs.save_answer(current_user.id, {'survey_id': survey_id, 'data': answer})
     survey = Survey.query.get_or_404(survey_id)
-    user_answer = UserAnswer(users=current_user, surveys=survey, answer_ipfs=answer_hash, answer_text=answer)
-    db.session.add(user_answer)
 
     if not survey.is_published:
         flash('问卷未发布或已截止', 'warning')
         return redirect(url_for('.index'))
-    current_user.participate(survey)
+
+    # user_answer = UserAnswer(users=current_user, surveys=survey, answer_ipfs=answer_hash, answer_text=answer)
+    # db.session.add(user_answer)
+
+    if not current_user.participate(survey, answer_hash, answer):
+        flash('已参加过该调查', 'warning')
+        return redirect(url_for('.index'))
+
     for k, v in order.items():
         question = SurveyQuestion.query.with_parent(survey).filter(SurveyQuestion.name == k).first()
         if isinstance(v, str):
@@ -299,11 +304,11 @@ def save_result():
             option.poll += 1
     db.session.commit()
 
-    task = save_result_web3.deplay(survey, survey_hash, answer_hash)
+    task = save_result_web3.delay(survey_id, survey_hash, answer_hash)
     current_app.logger.info('publish answer' +
-                            'survey_id: ' + survey.id + ' ' +
-                            'user_id: ' + current_user.id + ' ' +
-                            'task.id: ' + task.id)
+                            'survey_id: ' + str(survey.id) + ' ' +
+                            'user_id: ' + str(current_user.id) + ' ' +
+                            'task.id: ' + str(task.id))
     # current_web3.publish_answer(current_user.Ethereum_account, current_user.Ethereum_password,
     #                             survey.geth_address, json.loads(survey.geth_abi),
     #                             survey_hash, answer_hash)
