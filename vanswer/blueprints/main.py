@@ -7,7 +7,6 @@
 """
 import json
 import importlib
-from celery_worker import publish_survey_web3, end_survey_web3, save_result_web3
 from collections import OrderedDict
 from datetime import datetime
 from flask import render_template, flash, redirect, url_for, current_app, \
@@ -16,7 +15,7 @@ from flask_login import login_required, current_user
 from flask_web3 import current_web3
 
 from vanswer.decorators import confirm_required, permission_required
-from vanswer.extensions import db, CustomIpfs
+from vanswer.extensions import db, CustomIpfs, publish_survey_web3, end_survey_web3, save_result_web3
 from vanswer.forms.main import SurveyForm
 from vanswer.models import User, Survey, SurveyQuestion, QuestionOption, Collect, Notification, UserAnswer
 from vanswer.notifications import push_collect_notification
@@ -167,7 +166,7 @@ def change_survey_status(survey_id):
     survey = Survey.query.get_or_404(survey_id)
     if action == 'publish':
         survey.start_timestamp = datetime.utcnow()
-        task = publish_survey_web3.delay(survey_id)
+        task = publish_survey_web3.delay(current_user.id, survey_id)
         current_app.logger.info('publish survey ' + str(survey.id) + ' ' 
                                 'task.id: ' + str(task.id))
         # survey.geth_address, geth_abi = current_web3.publish_survey(current_user.Ethereum_account,
@@ -178,7 +177,7 @@ def change_survey_status(survey_id):
         flash('问卷已发布', 'info')
     else:
         survey.start_timestamp = datetime(2099, 1, 1)
-        task = end_survey_web3.delay(survey_id)
+        task = end_survey_web3.delay(current_user.id, survey_id)
         current_app.logger.info('end survey ' + str(survey.id) + ' ' 
                                 'task.id: ' + str(task.id))
 
@@ -305,7 +304,7 @@ def save_result():
             option.poll += 1
     db.session.commit()
 
-    task = save_result_web3.delay(survey_id, survey_hash, answer_hash)
+    task = save_result_web3.delay(current_user.id, survey_id, survey_hash, answer_hash)
     current_app.logger.info('publish answer' +
                             'survey_id: ' + str(survey.id) + ' ' +
                             'user_id: ' + str(current_user.id) + ' ' +

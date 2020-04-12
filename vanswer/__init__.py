@@ -20,7 +20,7 @@ from vanswer.blueprints.auth import auth_bp
 from vanswer.blueprints.main import main_bp
 from vanswer.blueprints.user import user_bp
 from vanswer.extensions import bootstrap, db, login_manager, mail,\
-    moment, whooshee, avatars, csrf, CustomFlaskWeb3, celery
+    moment, whooshee, avatars, csrf, CustomFlaskWeb3
 from vanswer.models import Role, User, Notification, Collect,\
     Permission, Survey, SurveyQuestion, QuestionOption, UserAnswer
 from vanswer.settings import config
@@ -47,13 +47,13 @@ def create_app(config_name=None):
 
     web3 = CustomFlaskWeb3(app=app)
 
-    celery.conf.update(app.config)
-
-    class ContextTask(celery.Task):
-        def __call__(self, *args, **kwargs):
-            with app.app_context():
-                return self.run(*args, **kwargs)
-    celery.Task = ContextTask
+    # celery.conf.update(app.config)
+    #
+    # class ContextTask(celery.Task):
+    #     def __call__(self, *args, **kwargs):
+    #         with app.app_context():
+    #             return self.run(*args, **kwargs)
+    # celery.Task = ContextTask
 
     register_extensions(app)
     register_logger(app)
