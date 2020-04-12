@@ -31,8 +31,8 @@ avatars = Avatars()
 csrf = CSRFProtect()
 celery = Celery(
         __name__,
-        backend=os.getenv('CELERY_RESULT_BACKEND'),
-        broker=os.getenv('CELERY_BROKER_URL')
+        backend=os.getenv('CELERY_RESULT_BACKEND', 'redis://localhost:6379/0'),
+        broker=os.getenv('CELERY_BROKER_URL', 'redis://localhost:6379/0')
     )
 
 
@@ -152,8 +152,9 @@ class CustomWeb3(Web3):
 
 
 @celery.task
-def save_result_web3(survey, survey_hash, answer_hash):
-    from vanswer.models import Notification
+def save_result_web3(survey_id, survey_hash, answer_hash):
+    from vanswer.models import Notification, Survey
+    survey = Survey.query.get_or_404(survey_id)
     try:
         current_web3.publish_answer(current_user.Ethereum_account, current_user.Ethereum_password,
                                     survey.geth_address, json.loads(survey.geth_abi),
@@ -165,12 +166,13 @@ def save_result_web3(survey, survey_hash, answer_hash):
         current_app.logger.error(e)
         notification = Notification(message='Failed to save answer to ethereum', receiver=current_user)
         db.session.add(notification)
-    db.session.commmit()
+    db.session.commit()
 
 
 @celery.task
-def publish_survey_web3(survey):
-    from vanswer.models import Notification
+def publish_survey_web3(survey_id):
+    from vanswer.models import Notification, Survey
+    survey = Survey.query.get_or_404(survey_id)
     try:
         survey.geth_address, geth_abi = current_web3.publish_survey(current_user.Ethereum_account,
                                                                     current_user.Ethereum_password,
@@ -188,8 +190,9 @@ def publish_survey_web3(survey):
 
 
 @celery.task
-def end_survey_web3(survey):
-    from vanswer.models import Notification
+def end_survey_web3(survey_id):
+    from vanswer.models import Notification, Survey
+    survey = Survey.query.get_or_404(survey_id)
     try:
         current_web3.end_survey(current_user.Ethereum_account, current_user.Ethereum_password,
                                 survey.geth_address, json.loads(survey.geth_abi))

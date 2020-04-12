@@ -157,11 +157,12 @@ class User(db.Model, UserMixin):
     def is_participant(self, survey):
         return UserAnswer.query.with_parent(self).filter_by(survey_id=survey.id).first() is not None
 
-    def participate(self, survey):
+    def participate(self, survey, answer_hash, answer):
         if not self.is_participant(survey):
-            user_answer = UserAnswer(users=self, surveys=survey)
+            user_answer = UserAnswer(users=self, surveys=survey, answer_ipfs=answer_hash, answer_text=answer)
             db.session.add(user_answer)
             db.session.commit()
+            return True
 
     def collect(self, photo):
         if not self.is_collecting(photo):

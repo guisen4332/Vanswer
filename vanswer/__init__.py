@@ -22,11 +22,16 @@ from vanswer.blueprints.user import user_bp
 from vanswer.extensions import bootstrap, db, login_manager, mail,\
     moment, whooshee, avatars, csrf, CustomFlaskWeb3, celery
 from vanswer.models import Role, User, Notification, Collect,\
-    Permission, Survey, SurveyQuestion, QuestionOption
+    Permission, Survey, SurveyQuestion, QuestionOption, UserAnswer
 from vanswer.settings import config
 
 
 def create_app(config_name=None):
+    from dotenv import load_dotenv
+    dotenv_path = os.path.join(os.path.dirname(os.path.dirname(__file__)), '.env')
+    if os.path.exists(dotenv_path):
+        load_dotenv(dotenv_path)
+
     if config_name is None:
         config_name = os.getenv('FLASK_CONFIG', 'development')
 
@@ -36,7 +41,7 @@ def create_app(config_name=None):
     app.config.update({'ETHEREUM_PROVIDER': os.getenv('ETHEREUM_PROVIDER', 'http'),
                        'ETHEREUM_ENDPOINT_URI': os.getenv('ETHEREUM_ENDPOINT_URI', 'http://localhost:8545'),
                        'ETHEREUM_OPTS': {'timeout': 60},
-                       # 'ETHEREUM_IPC_PATH': os.getenv('ETHEREUM_IPC_PATH', None),
+                       'ETHEREUM_IPC_PATH': os.getenv('ETHEREUM_IPC_PATH', None),
                        'CELERY_BROKER_URL': os.getenv('CELERY_BROKER_URL'),
                        'CELERY_RESULT_BACKEND': os.getenv('CELERY_RESULT_BACKEND')})
 
@@ -100,7 +105,7 @@ def register_shell_context(app):
     @app.shell_context_processor
     def make_shell_context():
         return dict(db=db, User=User, Survey=Survey, SurveyQuestion=SurveyQuestion,
-                    QuestionOption=QuestionOption, Collect=Collect,
+                    UserAnswer=UserAnswer, QuestionOption=QuestionOption, Collect=Collect,
                     Notification=Notification)
 
 

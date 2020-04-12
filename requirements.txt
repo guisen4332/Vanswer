@@ -54,6 +54,7 @@ pyrsistent==0.15.6
 python-dateutil==2.8.1
 python-dotenv==0.10.3
 qrcode==6.1
+redis==3.4.1
 requests==2.22.0
 requests-cache==0.5.2
 rlp==1.2.0
