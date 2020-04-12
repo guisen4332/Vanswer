@@ -7,6 +7,7 @@
 """
 import json
 import importlib
+from celery_worker import publish_survey_web3, end_survey_web3, save_result_web3
 from collections import OrderedDict
 from datetime import datetime
 from flask import render_template, flash, redirect, url_for, current_app, \
@@ -15,7 +16,7 @@ from flask_login import login_required, current_user
 from flask_web3 import current_web3
 
 from vanswer.decorators import confirm_required, permission_required
-from vanswer.extensions import db, CustomIpfs, publish_survey_web3, end_survey_web3, save_result_web3
+from vanswer.extensions import db, CustomIpfs
 from vanswer.forms.main import SurveyForm
 from vanswer.models import User, Survey, SurveyQuestion, QuestionOption, Collect, Notification, UserAnswer
 from vanswer.notifications import push_collect_notification

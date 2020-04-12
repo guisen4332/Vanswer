@@ -29,11 +29,6 @@ moment = Moment()
 whooshee = Whooshee()
 avatars = Avatars()
 csrf = CSRFProtect()
-celery = Celery(
-        __name__,
-        backend=os.getenv('CELERY_RESULT_BACKEND', 'redis://localhost:6379/0'),
-        broker=os.getenv('CELERY_BROKER_URL', 'redis://localhost:6379/0')
-    )
 
 
 @login_manager.user_loader
@@ -149,61 +144,6 @@ class CustomWeb3(Web3):
                       new_account,
                       balance)
         return new_account
-
-
-@celery.task
-def save_result_web3(survey_id, survey_hash, answer_hash):
-    from vanswer.models import Notification, Survey
-    survey = Survey.query.get_or_404(survey_id)
-    try:
-        current_web3.publish_answer(current_user.Ethereum_account, current_user.Ethereum_password,
-                                    survey.geth_address, json.loads(survey.geth_abi),
-                                    survey_hash, answer_hash)
-        current_user.account_balance = current_web3.eth.getBalance(current_user.Ethereum_account) / 1000000000000000000
-        notification = Notification(message='Succeed in saving answer to ethereum', receiver=current_user)
-        db.session.add(notification)
-    except Exception as e:
-        current_app.logger.error(e)
-        notification = Notification(message='Failed to save answer to ethereum', receiver=current_user)
-        db.session.add(notification)
-    db.session.commit()
-
-
-@celery.task
-def publish_survey_web3(survey_id):
-    from vanswer.models import Notification, Survey
-    survey = Survey.query.get_or_404(survey_id)
-    try:
-        survey.geth_address, geth_abi = current_web3.publish_survey(current_user.Ethereum_account,
-                                                                    current_user.Ethereum_password,
-                                                                    survey.id, survey.survey_ipfs,
-                                                                    survey.upper_limit_number, survey.reward)
-        survey.geth_abi = json.dumps(geth_abi)
-        current_user.account_balance = current_web3.eth.getBalance(current_user.Ethereum_account) / 1000000000000000000
-        notification = Notification(message='Succeed in publishing survey to ethereum', receiver=current_user)
-        db.session.add(notification)
-    except Exception as e:
-        current_app.logger.error(e)
-        notification = Notification(message='Failed to publish survey to ethereum', receiver=current_user)
-        db.session.add(notification)
-    db.session.commit()
-
-
-@celery.task
-def end_survey_web3(survey_id):
-    from vanswer.models import Notification, Survey
-    survey = Survey.query.get_or_404(survey_id)
-    try:
-        current_web3.end_survey(current_user.Ethereum_account, current_user.Ethereum_password,
-                                survey.geth_address, json.loads(survey.geth_abi))
-        current_user.account_balance = current_web3.eth.getBalance(current_user.Ethereum_account) / 1000000000000000000
-        notification = Notification(message='Succeeding in ending survey in ethereum', receiver=current_user)
-        db.session.add(notification)
-    except Exception as e:
-        current_app.logger.error(e)
-        notification = Notification(message='Failed to end survey in ethereum', receiver=current_user)
-        db.session.add(notification)
-    db.session.commit()
 
 
 class CustomFlaskWeb3(FlaskWeb3):
