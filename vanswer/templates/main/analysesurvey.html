@@ -37,7 +37,7 @@
                             <th class="th-inner">{{ question.survey.participants|length }}</th>
                         {% else %}
                             <th class="th-inner">本题有效填写人次(本题平均得分)</th>
-                            <th class="th-inner">{{ question.survey.questions|length }}({{ question.rating_average() }}) </th>
+                            <th class="th-inner">{{ question.survey.participants|length }}({{ question.rating_average() }}) </th>
                         {% endif %}
                     </tr>
              </tfoot>

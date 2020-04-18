@@ -28,7 +28,7 @@ def fake_admin():
                  Ethereum_account=current_web3.toChecksumAddress(current_app.config['ROOT_GETH_ACCOUNT']),
                  Ethereum_password=current_app.config['ROOT_GETH_PASSWORD'],
                  account_balance=current_web3.eth.getBalance(current_web3.toChecksumAddress(
-                     current_app.config['ROOT_GETH_ACCOUNT'])))
+                     current_app.config['ROOT_GETH_ACCOUNT'])) / 1000000000000000000)
     admin.set_password('12345678')
     notification = Notification(message='Hello, welcome to Vanswer.', receiver=admin)
     db.session.add(notification)
@@ -46,7 +46,7 @@ def fake_user(count=10):
                     email=fake.email(),
                     Ethereum_account=account,
                     Ethereum_password=current_app.config['USER_GETH_PASSWORD'],
-                    account_balance=current_web3.eth.getBalance(account))
+                    account_balance=current_web3.eth.getBalance(account) / 1000000000000000000)
         user.set_password('123456')
         db.session.add(user)
         print('add user')

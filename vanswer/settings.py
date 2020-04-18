@@ -25,7 +25,7 @@ class Operations:
 
 
 class BaseConfig:
-    VANSWER_ADMIN_EMAIL = os.getenv('VANSWER_ADMIN', 'admin@helloflask.com')
+    VANSWER_ADMIN_EMAIL = os.getenv('VANSWER_ADMIN', 'admin@vanswer.com')
     VANSWER_SURVEY_PER_PAGE = 12
     VANSWER_NOTIFICATION_PER_PAGE = 20
     VANSWER_USER_PER_PAGE = 20
