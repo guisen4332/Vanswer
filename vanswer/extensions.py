@@ -177,10 +177,9 @@ def publish_survey_web3(user_id, survey_id):
     user = User.query.get_or_404(user_id)
     survey = Survey.query.get_or_404(survey_id)
     try:
-        survey.geth_address, geth_abi = current_web3.publish_survey(user.Ethereum_account,
-                                                                    user.Ethereum_password,
-                                                                    survey.id, survey.survey_ipfs,
-                                                                    survey.upper_limit_number, survey.reward)
+        survey.geth_address, geth_abi = current_web3.publish_survey(user.Ethereum_account, user.Ethereum_password,
+                                                                    id=survey.id, ipfs=survey.survey_ipfs,
+                                                                    limit=survey.upper_limit_number, reward=survey.reward)
         survey.geth_abi = json.dumps(geth_abi)
         user.account_balance = current_web3.eth.getBalance(user.Ethereum_account) / 1000000000000000000
         notification = Notification(message='Succeed in publishing survey to ethereum', receiver=user)

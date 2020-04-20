@@ -30,9 +30,9 @@
 {% macro get_question_type(type) %}
     {% if type == 'rating' %}
         [评分]
-    {% elif type == 'dropdown' or type == 'radiogroup' %}
+    {% elif type == 'dropdown' or type == 'radiogroup' or type == 'one choice' %}
         [单选]
-    {% elif type == 'checkbox' %}
+    {% elif type == 'checkbox' or type == 'multiple choice' %}
         [多选]
     {% endif %}
 {% endmacro %}

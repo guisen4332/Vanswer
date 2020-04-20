@@ -67,8 +67,19 @@ def explore():
             pagination = None
             surveys = None
     else:
-        pagination = None
-        surveys = None
+        page = request.args.get('page', 1, type=int)
+        per_page = current_app.config['VANSWER_SURVEY_PER_PAGE']
+        try:
+            pagination = Survey.query.filter(Survey.start_timestamp < datetime.utcnow(),
+                                             Survey.end_timestamp > datetime.utcnow(),
+                                             Survey.is_explore_public == True) \
+                .order_by(Survey.timestamp.desc()) \
+                .paginate(page, per_page)
+            surveys = pagination.items
+        except Exception as e:
+            print(e)
+            pagination = None
+            surveys = None
     return render_template('main/explore.html', pagination=pagination, surveys=surveys)
 
 
@@ -148,6 +159,9 @@ def fill_in_survey():
     if not survey.is_published:
         flash('问卷未发布或已截止', 'warning')
         return redirect(url_for('.index'))
+    if current_user.is_participate(survey):
+        flash('已参加过该调查', 'warning')
+        return redirect(url_for('.index'))
     return render_template('main/fillinsurvey.html', survey=survey)
 
 
@@ -167,7 +181,7 @@ def change_survey_status(survey_id):
     if action == 'publish':
         survey.start_timestamp = datetime.utcnow()
         task = publish_survey_web3.delay(current_user.id, survey_id)
-        current_app.logger.info('publish survey ' + str(survey.id) + ' ' 
+        current_app.logger.info('publish survey ' + str(survey.id) + ' '
                                 'task.id: ' + str(task.id))
         # survey.geth_address, geth_abi = current_web3.publish_survey(current_user.Ethereum_account,
         #                                                             current_user.Ethereum_password,
@@ -178,7 +192,7 @@ def change_survey_status(survey_id):
     else:
         survey.start_timestamp = datetime(2099, 1, 1)
         task = end_survey_web3.delay(current_user.id, survey_id)
-        current_app.logger.info('end survey ' + str(survey.id) + ' ' 
+        current_app.logger.info('end survey ' + str(survey.id) + ' '
                                 'task.id: ' + str(task.id))
 
         # current_web3.end_survey(current_user.Ethereum_account, current_user.Ethereum_password,
@@ -231,6 +245,8 @@ def save_survey():
     for item in order['pages']:
         for element in item['elements']:
             name = element['name']
+            if 'title' in element:
+                name = element['title']
             question_type = get_question_type(element['type'])
             # rate_max = element['rateMax']
             question = SurveyQuestion(
@@ -243,6 +259,8 @@ def save_survey():
             if question_type != 'rating':
                 choices = element['choices']
                 for choice in choices:
+                    if isinstance(choice, dict):
+                        choice = choice['text']
                     option = QuestionOption(choice_text=choice)
                     # db.session.add(option)
                     question.options.append(option)
